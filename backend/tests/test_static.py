@@ -16,3 +16,13 @@ def test_number_page_has_issue_button(client):
     script = client.get("/frontend/number/number.js")
     assert script.status_code == 200
     assert 'id="issue-btn"' in script.text
+
+
+def test_counter_page_has_call_next_button(client):
+    page = client.get("/counter")
+    assert "/frontend/counter/counter.js" in page.text
+
+    script = client.get("/frontend/counter/counter.js")
+    assert script.status_code == 200
+    assert 'id="call-next-btn"' in script.text
+    assert 'id="select-1"' in script.text

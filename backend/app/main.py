@@ -7,6 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from .auth import SessionStore
 from .models import public_view
+from .routes import router
 from .store import load_state
 from .ws_manager import ConnectionManager
 
@@ -21,6 +22,7 @@ def create_app(data_path: Path) -> FastAPI:
     app.state.lock = asyncio.Lock()
     app.state.manager = ConnectionManager()
     app.state.sessions = SessionStore()
+    app.include_router(router)
 
     @app.get("/api/health")
     async def health() -> dict:

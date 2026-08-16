@@ -21,8 +21,7 @@ class Ticket(BaseModel):
 
 class Settings(BaseModel):
     numbering_pin: str = "1111"
-    counter1_pin: str = "2222"
-    counter2_pin: str = "3333"
+    counter_pins: list[str] = Field(default_factory=lambda: ["2222", "3333"])
     admin_pin: str = "9999"
 
 
@@ -37,4 +36,5 @@ def public_view(state: AppState) -> dict:
     return {
         "tickets": [t.model_dump(mode="json") for t in state.tickets],
         "next_number": state.next_number,
+        "counter_count": len(state.settings.counter_pins),
     }

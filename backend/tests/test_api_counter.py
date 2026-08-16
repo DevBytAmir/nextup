@@ -65,6 +65,34 @@ def test_done_without_active_ticket_returns_404(client):
     assert res.status_code == 404
 
 
+def test_recall_previous_without_token_returns_401(client):
+    res = client.post("/api/counter/recall-previous", json={"counter": 1})
+    assert res.status_code == 401
+
+
+def test_recall_previous_with_no_history_returns_404(client):
+    token = _login(client, "counter", "2222")
+    res = client.post(
+        "/api/counter/recall-previous", json={"counter": 1}, headers=_auth_headers(token)
+    )
+    assert res.status_code == 404
+
+
+def test_recall_previous_undoes_a_misclicked_done(client):
+    number_token = _login(client, "number", "1111")
+    client.post("/api/number/issue", headers=_auth_headers(number_token))
+
+    counter_token = _login(client, "counter", "2222")
+    client.post("/api/counter/call-next", json={"counter": 1}, headers=_auth_headers(counter_token))
+    client.post("/api/counter/done", json={"counter": 1}, headers=_auth_headers(counter_token))
+
+    res = client.post(
+        "/api/counter/recall-previous", json={"counter": 1}, headers=_auth_headers(counter_token)
+    )
+    assert res.status_code == 200
+    assert res.json() == {"number": 1, "status": "called", "counter": 1, "order": 1}
+
+
 async def test_simultaneous_call_next_from_both_counters_never_double_claims(app):
     from backend.app.auth import SessionStore
 

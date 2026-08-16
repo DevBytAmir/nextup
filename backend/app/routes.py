@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from .auth import check_pin, require_page
-from .models import public_view
+from .models import TicketStatus, public_view
 from .queue_logic import (
     call_next,
     delete_ticket,
     has_active_ticket,
     issue_number,
     mark_done,
+    recall_previous,
     reorder_ticket,
     requeue_ticket,
     skip_ticket,
@@ -69,9 +70,8 @@ class ReorderRequest(BaseModel):
     direction: str
 
 
-class SettingsUpdateRequest(BaseModel):
-    counter1_pin: str | None = None
-    counter2_pin: str | None = None
+class CounterPinsRequest(BaseModel):
+    counter_pins: list[str]
 
 
 @router.post("/admin/skip", dependencies=[Depends(require_page("admin"))])
@@ -118,16 +118,29 @@ async def reorder_route(payload: ReorderRequest, request: Request) -> dict:
     return {"reordered": True}
 
 
-@router.post("/admin/settings", dependencies=[Depends(require_page("admin"))])
-async def update_settings(payload: SettingsUpdateRequest, request: Request) -> dict:
+@router.post("/admin/counters", dependencies=[Depends(require_page("admin"))])
+async def update_counters(payload: CounterPinsRequest, request: Request) -> dict:
+    pins = [p.strip() for p in payload.counter_pins]
+    if not pins or any(not p for p in pins):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="need at least one non-empty counter PIN",
+        )
     async with request.app.state.lock:
-        settings = request.app.state.queue_state.settings
-        if payload.counter1_pin is not None:
-            settings.counter1_pin = payload.counter1_pin
-        if payload.counter2_pin is not None:
-            settings.counter2_pin = payload.counter2_pin
-        save_state(request.app.state.data_path, request.app.state.queue_state)
-    return {"updated": True}
+        state = request.app.state.queue_state
+        new_count = len(pins)
+        active_out_of_range = any(
+            t.status == TicketStatus.CALLED and t.counter is not None and t.counter > new_count
+            for t in state.tickets
+        )
+        if active_out_of_range:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="finish or skip active tickets on the counters being removed first",
+            )
+        state.settings.counter_pins = pins
+        await _persist_and_broadcast(request)
+    return {"counter_count": new_count}
 
 
 class CounterRequest(BaseModel):
@@ -158,5 +171,15 @@ async def done_route(payload: CounterRequest, request: Request) -> dict:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="no active ticket for this counter"
             )
+        await _persist_and_broadcast(request)
+    return ticket.model_dump(mode="json")
+
+
+@router.post("/counter/recall-previous", dependencies=[Depends(require_page("counter"))])
+async def recall_previous_route(payload: CounterRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        ticket = recall_previous(request.app.state.queue_state, payload.counter)
+        if ticket is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="nothing to recall")
         await _persist_and_broadcast(request)
     return ticket.model_dump(mode="json")

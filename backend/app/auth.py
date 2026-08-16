@@ -12,9 +12,7 @@ def check_pin(page: str, pin: str, settings: Settings) -> bool:
     if page == "number":
         return secrets.compare_digest(pin, settings.numbering_pin)
     if page == "counter":
-        return secrets.compare_digest(pin, settings.counter1_pin) or secrets.compare_digest(
-            pin, settings.counter2_pin
-        )
+        return any(secrets.compare_digest(pin, p) for p in settings.counter_pins)
     if page == "admin":
         return secrets.compare_digest(pin, settings.admin_pin)
     return False

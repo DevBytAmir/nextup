@@ -12,8 +12,8 @@ def test_check_pin_accepts_numbering_pin_for_number_page():
 
 def test_check_pin_accepts_either_counter_pin_for_counter_page():
     settings = Settings()
-    assert check_pin("counter", settings.counter1_pin, settings) is True
-    assert check_pin("counter", settings.counter2_pin, settings) is True
+    assert check_pin("counter", settings.counter_pins[0], settings) is True
+    assert check_pin("counter", settings.counter_pins[1], settings) is True
 
 
 def test_check_pin_accepts_admin_pin_for_admin_page():

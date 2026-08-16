@@ -40,22 +40,40 @@ def mark_done(state: AppState, counter: int) -> Ticket | None:
 
 
 def skip_ticket(state: AppState, number: int) -> Ticket | None:
+    """Set a ticket aside. The counter field is kept (not cleared) so a
+    later recall_previous can still find which counter skipped it."""
     ticket = _find(state, number)
     if ticket is None or ticket.status not in (TicketStatus.WAITING, TicketStatus.CALLED):
         return None
     ticket.status = TicketStatus.SKIPPED
-    ticket.counter = None
     return ticket
 
 
 def requeue_ticket(state: AppState, number: int) -> Ticket | None:
+    """Send a ticket back to the waiting line, from any status but waiting itself."""
     ticket = _find(state, number)
-    if ticket is None or ticket.status != TicketStatus.SKIPPED:
+    if ticket is None or ticket.status == TicketStatus.WAITING:
         return None
     max_order = max((t.order for t in state.tickets), default=0)
     ticket.status = TicketStatus.WAITING
     ticket.counter = None
     ticket.order = max_order + 1
+    return ticket
+
+
+def recall_previous(state: AppState, counter: int) -> Ticket | None:
+    """Undo this counter's most recent served/skipped ticket, e.g. after a misclick."""
+    if has_active_ticket(state, counter):
+        return None
+    candidates = [
+        t
+        for t in state.tickets
+        if t.counter == counter and t.status in (TicketStatus.SERVED, TicketStatus.SKIPPED)
+    ]
+    if not candidates:
+        return None
+    ticket = max(candidates, key=lambda t: t.number)
+    ticket.status = TicketStatus.CALLED
     return ticket
 
 

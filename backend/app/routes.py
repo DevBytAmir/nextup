@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
-from .auth import check_pin
+from .auth import check_pin, require_page
+from .models import public_view
+from .queue_logic import issue_number
+from .store import save_state
 
 router = APIRouter(prefix="/api")
 
@@ -28,3 +31,21 @@ async def login(payload: LoginRequest, request: Request) -> LoginResponse:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid pin")
     token = request.app.state.sessions.create(payload.page)
     return LoginResponse(token=token)
+
+
+async def _persist_and_broadcast(request: Request) -> None:
+    save_state(request.app.state.data_path, request.app.state.queue_state)
+    await request.app.state.manager.broadcast(public_view(request.app.state.queue_state))
+
+
+@router.get("/state")
+async def get_state(request: Request) -> dict:
+    return public_view(request.app.state.queue_state)
+
+
+@router.post("/number/issue", dependencies=[Depends(require_page("number"))])
+async def issue(request: Request) -> dict:
+    async with request.app.state.lock:
+        ticket = issue_number(request.app.state.queue_state)
+        await _persist_and_broadcast(request)
+    return ticket.model_dump(mode="json")

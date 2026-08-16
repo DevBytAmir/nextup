@@ -35,3 +35,13 @@ def test_admin_page_has_ticket_table(client):
     script = client.get("/frontend/admin/admin.js")
     assert script.status_code == 200
     assert 'id="ticket-table"' in script.text
+
+
+def test_tv_page_has_counter_tiles(client):
+    page = client.get("/tv")
+    assert "/frontend/tv/tv.js" in page.text
+
+    script = client.get("/frontend/tv/tv.js")
+    assert script.status_code == 200
+    assert 'id="counter-1-number"' in script.text
+    assert 'id="counter-2-number"' in script.text

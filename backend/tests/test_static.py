@@ -26,3 +26,12 @@ def test_counter_page_has_call_next_button(client):
     assert script.status_code == 200
     assert 'id="call-next-btn"' in script.text
     assert 'id="select-1"' in script.text
+
+
+def test_admin_page_has_ticket_table(client):
+    page = client.get("/admin")
+    assert "/frontend/admin/admin.js" in page.text
+
+    script = client.get("/frontend/admin/admin.js")
+    assert script.status_code == 200
+    assert 'id="ticket-table"' in script.text

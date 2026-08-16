@@ -39,5 +39,50 @@ def mark_done(state: AppState, counter: int) -> Ticket | None:
     return None
 
 
+def skip_ticket(state: AppState, number: int) -> Ticket | None:
+    ticket = _find(state, number)
+    if ticket is None or ticket.status not in (TicketStatus.WAITING, TicketStatus.CALLED):
+        return None
+    ticket.status = TicketStatus.SKIPPED
+    ticket.counter = None
+    return ticket
+
+
+def requeue_ticket(state: AppState, number: int) -> Ticket | None:
+    ticket = _find(state, number)
+    if ticket is None or ticket.status != TicketStatus.SKIPPED:
+        return None
+    max_order = max((t.order for t in state.tickets), default=0)
+    ticket.status = TicketStatus.WAITING
+    ticket.counter = None
+    ticket.order = max_order + 1
+    return ticket
+
+
+def delete_ticket(state: AppState, number: int) -> bool:
+    ticket = _find(state, number)
+    if ticket is None:
+        return False
+    state.tickets.remove(ticket)
+    return True
+
+
+def reorder_ticket(state: AppState, number: int, direction: str) -> bool:
+    if direction not in ("up", "down"):
+        return False
+    waiting = sorted(
+        (t for t in state.tickets if t.status == TicketStatus.WAITING),
+        key=lambda t: t.order,
+    )
+    idx = next((i for i, t in enumerate(waiting) if t.number == number), None)
+    if idx is None:
+        return False
+    swap_idx = idx - 1 if direction == "up" else idx + 1
+    if swap_idx < 0 or swap_idx >= len(waiting):
+        return False
+    waiting[idx].order, waiting[swap_idx].order = waiting[swap_idx].order, waiting[idx].order
+    return True
+
+
 def _find(state: AppState, number: int) -> Ticket | None:
     return next((t for t in state.tickets if t.number == number), None)

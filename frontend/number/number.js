@@ -4,8 +4,9 @@ function initNumberPage() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="page number-page">
+      <span class="eyebrow">Now Issuing</span>
       <h1>Issue Number</h1>
-      <button id="issue-btn">Issue Next Number</button>
+      <button id="issue-btn" class="btn-primary">Take a Number</button>
       <div id="last-issued"></div>
       <ul id="recent-list"></ul>
     </div>
@@ -20,7 +21,7 @@ function initNumberPage() {
     const ticket = await res.json();
     issued.unshift(ticket.number);
     issued.length = Math.min(issued.length, 5);
-    lastIssued.textContent = `Last issued: #${ticket.number}`;
+    lastIssued.innerHTML = `Last issued <span class="led-number">#${ticket.number}</span>`;
     recentList.innerHTML = issued.map((n) => `<li>#${n}</li>`).join("");
   });
 }

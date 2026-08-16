@@ -1,9 +1,10 @@
 function renderPinPad(container, page, onSuccess) {
   container.innerHTML = `
     <div class="pin-pad">
+      <span class="eyebrow">Staff Access</span>
       <h1>Enter PIN</h1>
-      <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" />
-      <button id="pin-submit">Enter</button>
+      <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="8" />
+      <button id="pin-submit" class="btn-primary">Enter</button>
       <p id="pin-error" class="error hidden">Wrong PIN</p>
     </div>
   `;

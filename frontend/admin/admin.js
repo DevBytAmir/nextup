@@ -4,6 +4,7 @@ function initAdminPage() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="page admin-page">
+      <span class="eyebrow">Control Panel</span>
       <h1>Admin</h1>
       <section id="ticket-table"></section>
       <section class="settings-panel">
@@ -48,7 +49,7 @@ function renderTickets(state) {
     .map(
       ([status, tickets]) => `
       <div class="ticket-group">
-        <h2>${status} (${tickets.length})</h2>
+        <h2><span class="status-pill status-pill--${status}">${status}</span> · ${tickets.length}</h2>
         <ul>${tickets.map((t) => ticketRow(t, status)).join("")}</ul>
       </div>
     `
@@ -80,7 +81,7 @@ function ticketRow(ticket, status) {
     actions.push(`<button data-action="requeue" data-number="${ticket.number}">Requeue</button>`);
   }
   actions.push(`<button data-action="delete" data-number="${ticket.number}">Delete</button>`);
-  return `<li>#${ticket.number} ${actions.join(" ")}</li>`;
+  return `<li><span class="ticket-number">#${ticket.number}</span> ${actions.join(" ")}</li>`;
 }
 
 async function handleAction(action, number, direction) {

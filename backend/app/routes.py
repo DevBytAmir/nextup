@@ -5,7 +5,16 @@ from pydantic import BaseModel
 
 from .auth import check_pin, require_page
 from .models import public_view
-from .queue_logic import call_next, has_active_ticket, issue_number, mark_done
+from .queue_logic import (
+    call_next,
+    delete_ticket,
+    has_active_ticket,
+    issue_number,
+    mark_done,
+    reorder_ticket,
+    requeue_ticket,
+    skip_ticket,
+)
 from .store import save_state
 
 router = APIRouter(prefix="/api")
@@ -49,6 +58,76 @@ async def issue(request: Request) -> dict:
         ticket = issue_number(request.app.state.queue_state)
         await _persist_and_broadcast(request)
     return ticket.model_dump(mode="json")
+
+
+class TicketNumberRequest(BaseModel):
+    number: int
+
+
+class ReorderRequest(BaseModel):
+    number: int
+    direction: str
+
+
+class SettingsUpdateRequest(BaseModel):
+    counter1_pin: str | None = None
+    counter2_pin: str | None = None
+
+
+@router.post("/admin/skip", dependencies=[Depends(require_page("admin"))])
+async def skip_route(payload: TicketNumberRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        ticket = skip_ticket(request.app.state.queue_state, payload.number)
+        if ticket is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="cannot skip ticket")
+        await _persist_and_broadcast(request)
+    return ticket.model_dump(mode="json")
+
+
+@router.post("/admin/requeue", dependencies=[Depends(require_page("admin"))])
+async def requeue_route(payload: TicketNumberRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        ticket = requeue_ticket(request.app.state.queue_state, payload.number)
+        if ticket is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="cannot requeue ticket"
+            )
+        await _persist_and_broadcast(request)
+    return ticket.model_dump(mode="json")
+
+
+@router.post("/admin/delete", dependencies=[Depends(require_page("admin"))])
+async def delete_route(payload: TicketNumberRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        deleted = delete_ticket(request.app.state.queue_state, payload.number)
+        if not deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ticket not found")
+        await _persist_and_broadcast(request)
+    return {"deleted": True}
+
+
+@router.post("/admin/reorder", dependencies=[Depends(require_page("admin"))])
+async def reorder_route(payload: ReorderRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        moved = reorder_ticket(request.app.state.queue_state, payload.number, payload.direction)
+        if not moved:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="cannot reorder ticket"
+            )
+        await _persist_and_broadcast(request)
+    return {"reordered": True}
+
+
+@router.post("/admin/settings", dependencies=[Depends(require_page("admin"))])
+async def update_settings(payload: SettingsUpdateRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        settings = request.app.state.queue_state.settings
+        if payload.counter1_pin is not None:
+            settings.counter1_pin = payload.counter1_pin
+        if payload.counter2_pin is not None:
+            settings.counter2_pin = payload.counter2_pin
+        save_state(request.app.state.data_path, request.app.state.queue_state)
+    return {"updated": True}
 
 
 class CounterRequest(BaseModel):

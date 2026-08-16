@@ -4,6 +4,8 @@ import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .auth import SessionStore
 from .models import public_view
@@ -13,6 +15,7 @@ from .ws_manager import ConnectionManager
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DATA_PATH = BASE_DIR / "data" / "state.json"
+FRONTEND_DIR = BASE_DIR / "frontend"
 
 
 def create_app(data_path: Path) -> FastAPI:
@@ -38,6 +41,18 @@ def create_app(data_path: Path) -> FastAPI:
                 await websocket.receive_text()
         except WebSocketDisconnect:
             manager.disconnect(websocket)
+
+    app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+
+    for page in ("number", "counter", "admin", "tv"):
+
+        def make_page_handler(page_name: str):
+            async def handler() -> FileResponse:
+                return FileResponse(FRONTEND_DIR / page_name / "index.html")
+
+            return handler
+
+        app.add_api_route(f"/{page}", make_page_handler(page), methods=["GET"])
 
     return app
 

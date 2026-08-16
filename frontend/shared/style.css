@@ -409,6 +409,32 @@ button:disabled {
   outline-offset: 2px;
 }
 
+.settings-panel label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+#counter-count-input {
+  width: 90px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+#counter-pin-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#counter-pin-inputs input {
+  width: 160px;
+  margin: 0;
+}
+
 #settings-message {
   color: var(--orange-deep);
   font-weight: 700;

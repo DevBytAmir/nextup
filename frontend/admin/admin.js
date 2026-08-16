@@ -1,6 +1,6 @@
 requireAuth("admin", initAdminPage);
 
-function initAdminPage() {
+async function initAdminPage() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="page admin-page">
@@ -8,33 +8,63 @@ function initAdminPage() {
       <h1>Admin</h1>
       <section id="ticket-table"></section>
       <section class="settings-panel">
-        <h2>Counter PINs</h2>
-        <input id="counter1-pin" placeholder="New Counter 1 PIN" />
-        <button id="save-counter1">Save</button>
-        <input id="counter2-pin" placeholder="New Counter 2 PIN" />
-        <button id="save-counter2">Save</button>
+        <h2>Counters</h2>
+        <label for="counter-count-input">Number of counters</label>
+        <input id="counter-count-input" type="number" min="1" value="2" />
+        <div id="counter-pin-inputs"></div>
+        <button id="save-counters" class="btn-primary">Save Counters</button>
         <p id="settings-message"></p>
       </section>
     </div>
   `;
-  document
-    .getElementById("save-counter1")
-    .addEventListener("click", () => saveSetting("counter1_pin", "counter1-pin"));
-  document
-    .getElementById("save-counter2")
-    .addEventListener("click", () => saveSetting("counter2_pin", "counter2-pin"));
 
-  apiGet("/api/state")
-    .then((res) => res.json())
-    .then(renderTickets);
+  const state = await (await apiGet("/api/state")).json();
+  const countInput = document.getElementById("counter-count-input");
+  countInput.value = state.counter_count;
+  renderPinInputs(state.counter_count);
+
+  countInput.addEventListener("input", () => {
+    const count = Math.max(1, Number(countInput.value) || 1);
+    renderPinInputs(count);
+  });
+
+  document.getElementById("save-counters").addEventListener("click", saveCounters);
+
+  renderTickets(state);
   connectWs(renderTickets);
 }
 
-async function saveSetting(field, inputId) {
-  const value = document.getElementById(inputId).value.trim();
-  if (!value) return;
-  const res = await apiPost("/api/admin/settings", "admin", { [field]: value });
-  document.getElementById("settings-message").textContent = res.ok ? "Saved" : "Failed to save";
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[ch]);
+}
+
+function renderPinInputs(count) {
+  const container = document.getElementById("counter-pin-inputs");
+  const existing = Array.from(container.querySelectorAll("input")).map((el) => el.value);
+  container.innerHTML = Array.from(
+    { length: count },
+    (_, i) =>
+      `<input data-pin-index="${i}" placeholder="Counter ${i + 1} PIN" value="${escapeHtml(existing[i] || "")}" />`
+  ).join("");
+}
+
+async function saveCounters() {
+  const pins = Array.from(document.querySelectorAll("[data-pin-index]")).map((el) =>
+    el.value.trim()
+  );
+  const message = document.getElementById("settings-message");
+  if (!pins.length || pins.some((p) => !p)) {
+    message.textContent = "Every counter needs a PIN";
+    return;
+  }
+  const res = await apiPost("/api/admin/counters", "admin", { counter_pins: pins });
+  message.textContent = res.ok ? "Saved" : "Failed to save";
 }
 
 function renderTickets(state) {
@@ -76,8 +106,9 @@ function ticketRow(ticket, status) {
   }
   if (status === "called") {
     actions.push(`<button data-action="skip" data-number="${ticket.number}">Skip</button>`);
+    actions.push(`<button data-action="requeue" data-number="${ticket.number}">Requeue</button>`);
   }
-  if (status === "skipped") {
+  if (status === "served" || status === "skipped") {
     actions.push(`<button data-action="requeue" data-number="${ticket.number}">Requeue</button>`);
   }
   actions.push(`<button data-action="delete" data-number="${ticket.number}">Delete</button>`);

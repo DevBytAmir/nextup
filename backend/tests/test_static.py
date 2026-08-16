@@ -25,7 +25,7 @@ def test_counter_page_has_call_next_button(client):
     script = client.get("/frontend/counter/counter.js")
     assert script.status_code == 200
     assert 'id="call-next-btn"' in script.text
-    assert 'id="select-1"' in script.text
+    assert "data-counter" in script.text
 
 
 def test_admin_page_has_ticket_table(client):
@@ -43,5 +43,5 @@ def test_tv_page_has_counter_tiles(client):
 
     script = client.get("/frontend/tv/tv.js")
     assert script.status_code == 200
-    assert 'id="counter-1-number"' in script.text
-    assert 'id="counter-2-number"' in script.text
+    assert "renderCounterTiles" in script.text
+    assert "counter-tile" in script.text

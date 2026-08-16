@@ -1,28 +1,40 @@
 requireAuth("counter", initCounterPage);
 
-function initCounterPage() {
-  const counterId = localStorage.getItem("queue_counter_id");
-  if (!counterId) {
-    renderCounterSelect();
+async function initCounterPage() {
+  const res = await apiGet("/api/state");
+  const state = await res.json();
+  const counterCount = state.counter_count;
+
+  const stored = Number(localStorage.getItem("queue_counter_id"));
+  if (stored && stored >= 1 && stored <= counterCount) {
+    renderCounter(stored);
     return;
   }
-  renderCounter(Number(counterId));
+
+  if (counterCount === 1) {
+    chooseCounter(1);
+    return;
+  }
+
+  renderCounterSelect(counterCount);
 }
 
-function renderCounterSelect() {
+function renderCounterSelect(counterCount) {
   const app = document.getElementById("app");
+  const buttons = Array.from(
+    { length: counterCount },
+    (_, i) => `<button data-counter="${i + 1}" class="btn-primary">Counter ${i + 1}</button>`
+  ).join("");
   app.innerHTML = `
     <div class="page counter-select">
       <span class="eyebrow">Setup</span>
       <h1>Which counter are you?</h1>
-      <div>
-        <button id="select-1" class="btn-primary">Counter 1</button>
-        <button id="select-2" class="btn-primary">Counter 2</button>
-      </div>
+      <div>${buttons}</div>
     </div>
   `;
-  document.getElementById("select-1").addEventListener("click", () => chooseCounter(1));
-  document.getElementById("select-2").addEventListener("click", () => chooseCounter(2));
+  app.querySelectorAll("[data-counter]").forEach((btn) => {
+    btn.addEventListener("click", () => chooseCounter(Number(btn.dataset.counter)));
+  });
 }
 
 function chooseCounter(id) {
@@ -39,6 +51,7 @@ function renderCounter(counterId) {
       <div id="current-number" class="led-number led-number--idle">—</div>
       <div class="button-row">
         <button id="call-next-btn" class="btn-primary">Call Next</button>
+        <button id="recall-btn">Call Previous</button>
         <button id="done-btn" disabled>Done</button>
       </div>
       <p id="counter-message"></p>
@@ -46,8 +59,27 @@ function renderCounter(counterId) {
   `;
   const currentNumber = document.getElementById("current-number");
   const callBtn = document.getElementById("call-next-btn");
+  const recallBtn = document.getElementById("recall-btn");
   const doneBtn = document.getElementById("done-btn");
   const message = document.getElementById("counter-message");
+
+  function showActive(ticket) {
+    currentNumber.classList.remove("led-number--idle");
+    currentNumber.textContent = `#${ticket.number}`;
+    replayFlicker(currentNumber);
+    message.textContent = "";
+    callBtn.disabled = true;
+    recallBtn.disabled = true;
+    doneBtn.disabled = false;
+  }
+
+  function showIdle() {
+    currentNumber.classList.add("led-number--idle");
+    currentNumber.textContent = "—";
+    callBtn.disabled = false;
+    recallBtn.disabled = false;
+    doneBtn.disabled = true;
+  }
 
   callBtn.addEventListener("click", async () => {
     const res = await apiPost("/api/counter/call-next", "counter", { counter: counterId });
@@ -56,22 +88,25 @@ function renderCounter(counterId) {
       return;
     }
     if (!res.ok) return;
-    const ticket = await res.json();
-    currentNumber.classList.remove("led-number--idle");
-    currentNumber.textContent = `#${ticket.number}`;
-    replayFlicker(currentNumber);
-    message.textContent = "";
-    callBtn.disabled = true;
-    doneBtn.disabled = false;
+    showActive(await res.json());
+  });
+
+  recallBtn.addEventListener("click", async () => {
+    const res = await apiPost("/api/counter/recall-previous", "counter", {
+      counter: counterId,
+    });
+    if (res.status === 404) {
+      message.textContent = "Nothing to recall";
+      return;
+    }
+    if (!res.ok) return;
+    showActive(await res.json());
   });
 
   doneBtn.addEventListener("click", async () => {
     const res = await apiPost("/api/counter/done", "counter", { counter: counterId });
     if (!res.ok) return;
-    currentNumber.classList.add("led-number--idle");
-    currentNumber.textContent = "—";
-    callBtn.disabled = false;
-    doneBtn.disabled = true;
+    showIdle();
   });
 }
 

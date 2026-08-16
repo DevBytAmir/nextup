@@ -1,20 +1,13 @@
 initTvPage();
 
+let renderedCount = 0;
+
 function initTvPage() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="page tv-page">
       <span class="eyebrow">Live Queue</span>
-      <div class="counters">
-        <div class="counter-tile">
-          <h2>Counter 1</h2>
-          <div id="counter-1-number" class="led-number led-number--idle">—</div>
-        </div>
-        <div class="counter-tile">
-          <h2>Counter 2</h2>
-          <div id="counter-2-number" class="led-number led-number--idle">—</div>
-        </div>
-      </div>
+      <div class="counters" id="counters"></div>
       <div id="waiting-count">Waiting <span class="led-number">0</span></div>
       <div class="recent">
         <h2>Recently Called</h2>
@@ -29,14 +22,19 @@ function initTvPage() {
 }
 
 function render(state) {
-  const called = { 1: "—", 2: "—" };
+  if (state.counter_count !== renderedCount) {
+    renderCounterTiles(state.counter_count);
+  }
+
+  const called = {};
   for (const ticket of state.tickets) {
-    if (ticket.status === "called" && (ticket.counter === 1 || ticket.counter === 2)) {
+    if (ticket.status === "called" && ticket.counter) {
       called[ticket.counter] = ticket.number;
     }
   }
-  updateCounterTile(1, called[1]);
-  updateCounterTile(2, called[2]);
+  for (let i = 1; i <= state.counter_count; i++) {
+    updateCounterTile(i, called[i] ?? "—");
+  }
 
   const waitingCount = state.tickets.filter((t) => t.status === "waiting").length;
   document.getElementById("waiting-count").innerHTML =
@@ -51,8 +49,23 @@ function render(state) {
     .join("");
 }
 
+function renderCounterTiles(counterCount) {
+  const container = document.getElementById("counters");
+  container.innerHTML = Array.from(
+    { length: counterCount },
+    (_, i) => `
+      <div class="counter-tile">
+        <h2>Counter ${i + 1}</h2>
+        <div id="counter-${i + 1}-number" class="led-number led-number--idle">—</div>
+      </div>
+    `
+  ).join("");
+  renderedCount = counterCount;
+}
+
 function updateCounterTile(counterId, value) {
   const el = document.getElementById(`counter-${counterId}-number`);
+  if (!el) return;
   const next = displayNumber(value);
   if (el.textContent === next) return;
   el.textContent = next;

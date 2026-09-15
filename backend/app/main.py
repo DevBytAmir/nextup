@@ -42,11 +42,13 @@ def create_app(data_path: Path) -> FastAPI:
     async def ws_endpoint(websocket: WebSocket) -> None:
         manager: ConnectionManager = websocket.app.state.manager
         await manager.connect(websocket)
-        await websocket.send_json(public_view(websocket.app.state.queue_state))
         try:
+            await websocket.send_json(public_view(websocket.app.state.queue_state))
             while True:
                 await websocket.receive_text()
         except WebSocketDisconnect:
+            pass
+        finally:
             manager.disconnect(websocket)
 
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")

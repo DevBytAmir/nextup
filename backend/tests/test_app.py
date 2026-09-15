@@ -15,6 +15,14 @@ def test_ws_sends_public_view_on_connect(client):
     }
 
 
+def test_ws_disconnect_always_removes_the_connection(client, app):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        assert len(app.state.manager._connections) == 1
+
+    assert len(app.state.manager._connections) == 0
+
+
 def test_app_loads_existing_state_from_disk(data_path, app):
     from backend.app.main import create_app
     from backend.app.models import AppState, Ticket

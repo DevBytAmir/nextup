@@ -6,7 +6,12 @@ def _login(client, page, pin):
 def test_get_state_requires_no_auth_and_starts_empty(client):
     res = client.get("/api/state")
     assert res.status_code == 200
-    assert res.json() == {"tickets": [], "next_number": 1, "counter_count": 2}
+    assert res.json() == {
+        "tickets": [],
+        "next_number": 1,
+        "counter_count": 2,
+        "sound_mode": "off",
+    }
 
 
 def test_issue_without_token_returns_401(client):

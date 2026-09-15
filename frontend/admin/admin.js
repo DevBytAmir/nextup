@@ -15,6 +15,17 @@ async function initAdminPage() {
         <button id="save-counters" class="btn-primary">Save Counters</button>
         <p id="settings-message"></p>
       </section>
+      <section class="settings-panel">
+        <h2>Sound</h2>
+        <label>What plays on the TV screen when a number is called</label>
+        <div class="radio-group">
+          <label><input type="radio" name="sound-mode" value="off" /> Off</label>
+          <label><input type="radio" name="sound-mode" value="beep" /> Beep</label>
+          <label><input type="radio" name="sound-mode" value="announce" /> Voice announce</label>
+        </div>
+        <button id="save-sound" class="btn-primary">Save Sound</button>
+        <p id="sound-message"></p>
+      </section>
     </div>
   `;
 
@@ -30,8 +41,24 @@ async function initAdminPage() {
 
   document.getElementById("save-counters").addEventListener("click", saveCounters);
 
+  document.querySelectorAll('input[name="sound-mode"]').forEach((input) => {
+    input.checked = input.value === state.sound_mode;
+  });
+  document.getElementById("save-sound").addEventListener("click", saveSoundMode);
+
   renderTickets(state);
   connectWs(renderTickets);
+}
+
+async function saveSoundMode() {
+  const selected = document.querySelector('input[name="sound-mode"]:checked');
+  const message = document.getElementById("sound-message");
+  if (!selected) {
+    message.textContent = "Pick a sound option";
+    return;
+  }
+  const res = await apiPost("/api/admin/sound-mode", "admin", { sound_mode: selected.value });
+  message.textContent = res.ok ? "Saved" : "Failed to save";
 }
 
 function escapeHtml(value) {

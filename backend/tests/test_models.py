@@ -28,6 +28,7 @@ def test_public_view_excludes_settings_and_pins():
         "tickets": [{"number": 1, "status": "waiting", "counter": None, "order": 1}],
         "next_number": 2,
         "counter_count": 2,
+        "sound_mode": "off",
     }
     assert "settings" not in view
     serialized = str(view)

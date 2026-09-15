@@ -19,6 +19,7 @@ def test_admin_routes_require_admin_token(client):
         ("/api/admin/delete", {"number": 1}),
         ("/api/admin/reorder", {"number": 1, "direction": "up"}),
         ("/api/admin/counters", {"counter_pins": ["5555"]}),
+        ("/api/admin/sound-mode", {"sound_mode": "beep"}),
     ]:
         res = client.post(path, json=body)
         assert res.status_code == 401, path
@@ -146,6 +147,34 @@ def test_update_counters_blocks_shrink_below_active_counter(client):
         headers=_auth_headers(admin_token),
     )
     assert res.status_code == 409
+
+
+def test_update_sound_mode_changes_public_state(client):
+    admin_token = _login(client, "admin", "9999")
+
+    state = client.get("/api/state").json()
+    assert state["sound_mode"] == "off"
+
+    res = client.post(
+        "/api/admin/sound-mode",
+        json={"sound_mode": "beep"},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+    assert res.json() == {"sound_mode": "beep"}
+
+    state = client.get("/api/state").json()
+    assert state["sound_mode"] == "beep"
+
+
+def test_update_sound_mode_rejects_unknown_value(client):
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/sound-mode",
+        json={"sound_mode": "loud"},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 422
 
 
 def test_requeue_ticket_from_served_status(client):

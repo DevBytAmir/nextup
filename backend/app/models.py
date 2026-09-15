@@ -12,6 +12,12 @@ class TicketStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class SoundMode(StrEnum):
+    OFF = "off"
+    BEEP = "beep"
+    ANNOUNCE = "announce"
+
+
 class Ticket(BaseModel):
     number: int
     status: TicketStatus = TicketStatus.WAITING
@@ -23,6 +29,7 @@ class Settings(BaseModel):
     numbering_pin: str = "1111"
     counter_pins: list[str] = Field(default_factory=lambda: ["2222", "3333"])
     admin_pin: str = "9999"
+    sound_mode: SoundMode = SoundMode.OFF
 
 
 class AppState(BaseModel):
@@ -37,4 +44,5 @@ def public_view(state: AppState) -> dict:
         "tickets": [t.model_dump(mode="json") for t in state.tickets],
         "next_number": state.next_number,
         "counter_count": len(state.settings.counter_pins),
+        "sound_mode": state.settings.sound_mode.value,
     }

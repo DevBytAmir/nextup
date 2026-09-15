@@ -7,7 +7,12 @@ def test_health_check_returns_ok(client):
 def test_ws_sends_public_view_on_connect(client):
     with client.websocket_connect("/ws") as ws:
         message = ws.receive_json()
-    assert message == {"tickets": [], "next_number": 1, "counter_count": 2}
+    assert message == {
+        "tickets": [],
+        "next_number": 1,
+        "counter_count": 2,
+        "sound_mode": "off",
+    }
 
 
 def test_app_loads_existing_state_from_disk(data_path, app):

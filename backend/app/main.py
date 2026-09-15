@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -26,6 +26,13 @@ def create_app(data_path: Path) -> FastAPI:
     app.state.manager = ConnectionManager()
     app.state.sessions = SessionStore()
     app.include_router(router)
+
+    @app.middleware("http")
+    async def no_cache(request: Request, call_next):
+        response = await call_next(request)
+        if not request.url.path.startswith("/frontend/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.get("/api/health")
     async def health() -> dict:

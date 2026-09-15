@@ -35,9 +35,15 @@ body {
   padding: 32px 24px 64px;
 }
 
-#app:has(.admin-page) {
+body.page-admin #app {
   justify-content: flex-start;
   padding-top: 56px;
+}
+
+body.page-tv #app {
+  max-width: none;
+  width: 100%;
+  padding: clamp(24px, 4vh, 64px) clamp(24px, 4vw, 80px);
 }
 
 .page { width: 100%; }
@@ -289,6 +295,23 @@ button:disabled {
   min-height: 1.4em;
 }
 
+.link-btn {
+  margin-top: 24px;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover:not(:disabled) {
+  color: var(--orange-deep);
+  border: none;
+}
+
 /* --- TV page --- */
 
 .tv-page {
@@ -296,11 +319,22 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+}
+
+.tv-header {
+  width: 100%;
+  margin-bottom: clamp(24px, 3vh, 48px);
+}
+
+.tv-header h1 {
+  margin: 4px 0 0;
+  font-size: clamp(2.2rem, 4.5vw, 3.6rem);
 }
 
 .tv-page .counters {
   display: flex;
-  gap: 24px;
+  gap: clamp(20px, 3vw, 40px);
   justify-content: center;
   flex-wrap: wrap;
   width: 100%;
@@ -309,23 +343,26 @@ button:disabled {
 .counter-tile {
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: 16px;
-  padding: 28px 40px;
+  border-radius: 20px;
+  padding: clamp(28px, 4vw, 48px) clamp(36px, 6vw, 72px);
   flex: 1;
-  min-width: 220px;
+  min-width: 260px;
   box-shadow: 0 8px 24px rgba(31, 27, 22, 0.05);
 }
 
-.counter-tile h2 { margin-bottom: 12px; }
+.counter-tile h2 {
+  margin-bottom: 12px;
+  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+}
 
 .counter-tile .led-number {
-  font-size: clamp(3.5rem, 12vw, 6.5rem);
+  font-size: clamp(5rem, 14vw, 11rem);
   line-height: 1;
 }
 
 #waiting-count {
-  margin: 32px 0;
-  font-size: 1.1rem;
+  margin: clamp(24px, 3vh, 40px) 0 12px;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -333,11 +370,42 @@ button:disabled {
 }
 
 #waiting-count .led-number {
-  font-size: 1.6rem;
+  font-size: clamp(1.6rem, 2.6vw, 2.4rem);
   margin-left: 8px;
 }
 
-.tv-page .recent { margin-top: 32px; }
+.tv-status {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+.tv-unlock-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.tv-page .recent {
+  width: 100%;
+  max-width: 520px;
+  margin-top: clamp(12px, 2vh, 28px);
+  text-align: left;
+}
+
+.tv-page #recent-list {
+  justify-content: flex-start;
+}
 
 /* --- Admin page --- */
 
@@ -435,16 +503,40 @@ button:disabled {
   margin: 0;
 }
 
-#settings-message {
+#settings-message,
+#sound-message {
   color: var(--orange-deep);
   font-weight: 700;
   font-size: 0.85rem;
 }
 
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+  width: auto;
+  margin: 0;
+  accent-color: var(--orange);
+}
+
 /* --- Responsive --- */
 
 @media (max-width: 560px) {
-  #app { padding: 20px 16px 48px; }
+  body:not(.page-tv) #app { padding: 20px 16px 48px; }
   .tv-page .counters { flex-direction: column; }
   .counter-select div, .counter-page .button-row {
     flex-direction: column;

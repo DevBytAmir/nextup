@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from .auth import check_pin, require_page
-from .models import TicketStatus, public_view
+from .models import SoundMode, TicketStatus, public_view
 from .queue_logic import (
     call_next,
     delete_ticket,
@@ -141,6 +141,19 @@ async def update_counters(payload: CounterPinsRequest, request: Request) -> dict
         state.settings.counter_pins = pins
         await _persist_and_broadcast(request)
     return {"counter_count": new_count}
+
+
+class SoundModeRequest(BaseModel):
+    sound_mode: SoundMode
+
+
+@router.post("/admin/sound-mode", dependencies=[Depends(require_page("admin"))])
+async def update_sound_mode(payload: SoundModeRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        state = request.app.state.queue_state
+        state.settings.sound_mode = payload.sound_mode
+        await _persist_and_broadcast(request)
+    return {"sound_mode": payload.sound_mode.value}
 
 
 class CounterRequest(BaseModel):

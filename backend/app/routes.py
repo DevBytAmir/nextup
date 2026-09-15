@@ -5,7 +5,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from .auth import check_counter_pin, check_pin, require_counter, require_page
+from .auth import bearer_token, check_counter_pin, check_pin, require_counter, require_page
 from .models import SoundMode, TicketStatus, public_view
 from .queue_logic import (
     call_next,
@@ -55,8 +55,7 @@ async def login(payload: LoginRequest, request: Request) -> LoginResponse:
 
 @router.post("/logout")
 async def logout(request: Request) -> dict:
-    header = request.headers.get("Authorization", "")
-    token = header.removeprefix("Bearer ").strip()
+    token = bearer_token(request)
     if token:
         request.app.state.sessions.revoke(token)
     return {"loggedOut": True}

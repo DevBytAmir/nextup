@@ -53,10 +53,14 @@ class SessionStore:
         self._tokens.pop(token, None)
 
 
+def bearer_token(request: Request) -> str:
+    header = request.headers.get("Authorization", "")
+    return header.removeprefix("Bearer ").strip()
+
+
 def require_page(page: str) -> Callable:
     async def dependency(request: Request) -> None:
-        header = request.headers.get("Authorization", "")
-        token = header.removeprefix("Bearer ").strip()
+        token = bearer_token(request)
         sessions: SessionStore = request.app.state.sessions
         if not token or not sessions.is_valid(token, page):
             raise HTTPException(
@@ -68,8 +72,7 @@ def require_page(page: str) -> Callable:
 
 
 async def require_counter(request: Request) -> int:
-    header = request.headers.get("Authorization", "")
-    token = header.removeprefix("Bearer ").strip()
+    token = bearer_token(request)
     sessions: SessionStore = request.app.state.sessions
     counter = sessions.counter_for(token) if token else None
     if not token or counter is None or not sessions.is_valid(token, "counter"):

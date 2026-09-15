@@ -150,7 +150,7 @@ function render(state) {
 
   const recent = state.tickets
     .filter((t) => t.status === "called" || t.status === "served")
-    .sort((a, b) => b.number - a.number)
+    .sort((a, b) => b.touched_at - a.touched_at)
     .slice(0, 5);
   document.getElementById("recent-list").innerHTML = recent
     .map((t) => `<li>#${t.number} <span class="status-pill status-pill--${t.status}">${t.status}</span></li>`)

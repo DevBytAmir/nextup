@@ -88,6 +88,12 @@ async function issueBulk() {
   message.textContent = `Issued #${tickets[0].number} to #${tickets[tickets.length - 1].number}`;
 }
 
+async function saveResultMessage(res) {
+  if (res.ok) return "Saved";
+  const body = await res.json().catch(() => null);
+  return body?.detail || "Failed to save";
+}
+
 async function saveSoundMode() {
   const selected = document.querySelector('input[name="sound-mode"]:checked');
   const message = document.getElementById("sound-message");
@@ -96,7 +102,7 @@ async function saveSoundMode() {
     return;
   }
   const res = await apiPost("/api/admin/sound-mode", "admin", { sound_mode: selected.value });
-  message.textContent = res.ok ? "Saved" : "Failed to save";
+  message.textContent = await saveResultMessage(res);
 }
 
 function escapeHtml(value) {
@@ -130,7 +136,7 @@ async function saveCounters() {
     return;
   }
   const res = await apiPost("/api/admin/counters", "admin", { counter_pins: pins });
-  message.textContent = res.ok ? "Saved" : "Failed to save";
+  message.textContent = await saveResultMessage(res);
   if (res.ok) {
     currentCounterCount = pins.length;
     document.querySelectorAll("[data-pin-index]").forEach((el) => (el.value = ""));

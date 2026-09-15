@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 from backend.app.auth import (
     SessionStore,
+    bearer_token,
     check_counter_pin,
     check_pin,
     require_counter,
@@ -167,3 +168,13 @@ async def test_require_counter_raises_401_for_a_non_counter_session():
     with pytest.raises(HTTPException) as exc_info:
         await require_counter(_FakeRequest(sessions, f"Bearer {token}"))
     assert exc_info.value.status_code == 401
+
+
+def test_bearer_token_strips_the_prefix():
+    sessions = SessionStore()
+    assert bearer_token(_FakeRequest(sessions, "Bearer abc123")) == "abc123"
+
+
+def test_bearer_token_returns_empty_string_when_missing():
+    sessions = SessionStore()
+    assert bearer_token(_FakeRequest(sessions, None)) == ""

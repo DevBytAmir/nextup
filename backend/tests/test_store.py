@@ -38,3 +38,28 @@ def test_save_state_writes_readable_json(tmp_path):
 
     raw = json.loads(path.read_text(encoding="utf-8"))
     assert raw["next_number"] == 5
+
+
+def test_load_state_recovers_from_malformed_json(tmp_path):
+    path = tmp_path / "state.json"
+    path.write_text("{not valid json", encoding="utf-8")
+
+    state = load_state(path)
+
+    assert state.tickets == []
+    assert path.exists()
+    assert json.loads(path.read_text(encoding="utf-8"))["next_number"] == 1
+    backups = list(tmp_path.glob("state.json.corrupt-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "{not valid json"
+
+
+def test_load_state_recovers_from_schema_incompatible_json(tmp_path):
+    path = tmp_path / "state.json"
+    path.write_text(json.dumps({"tickets": "not-a-list"}), encoding="utf-8")
+
+    state = load_state(path)
+
+    assert state.tickets == []
+    backups = list(tmp_path.glob("state.json.corrupt-*"))
+    assert len(backups) == 1

@@ -56,11 +56,13 @@ def test_call_next_twice_never_double_claims_same_ticket():
 
 def test_call_next_refuses_when_counter_already_has_an_active_ticket():
     state = AppState()
-    issue_number(state)
-    issue_number(state)
+    issue_number(state)  # #1
+    issue_number(state)  # #2
     call_next(state, counter=1)
 
     assert call_next(state, counter=1) is None
+    still_waiting = [t for t in state.tickets if t.status == TicketStatus.WAITING]
+    assert [t.number for t in still_waiting] == [2]
 
 
 def test_mark_done_transitions_called_ticket_to_served():

@@ -7,7 +7,7 @@ async function initCounterPage() {
 
   const stored = Number(localStorage.getItem("queue_counter_id"));
   if (stored && stored >= 1 && stored <= counterCount) {
-    renderCounter(stored, counterCount);
+    renderCounter(stored, counterCount, state);
     return;
   }
 
@@ -37,9 +37,10 @@ function renderCounterSelect(counterCount) {
   });
 }
 
-function chooseCounter(id, counterCount) {
+async function chooseCounter(id, counterCount) {
   localStorage.setItem("queue_counter_id", String(id));
-  renderCounter(id, counterCount);
+  const state = await (await apiGet("/api/state")).json();
+  renderCounter(id, counterCount, state);
 }
 
 async function switchCounter() {
@@ -48,7 +49,7 @@ async function switchCounter() {
   renderCounterSelect(state.counter_count);
 }
 
-function renderCounter(counterId, counterCount) {
+function renderCounter(counterId, counterCount, state) {
   const app = document.getElementById("app");
   const switchLink =
     counterCount > 1
@@ -126,6 +127,13 @@ function renderCounter(counterId, counterCount) {
     if (!res.ok) return;
     showIdle();
   });
+
+  const activeTicket = state.tickets.find(
+    (t) => t.status === "called" && t.counter === counterId
+  );
+  if (activeTicket) {
+    showActive(activeTicket);
+  }
 }
 
 function replayFlicker(el) {

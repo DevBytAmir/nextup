@@ -1,11 +1,13 @@
-function renderPinPad(container, page, onSuccess) {
+function renderPinPad(container, page, onSuccess, options = {}) {
+  const { eyebrow = "Staff Access", counter, onBack } = options;
   container.innerHTML = `
     <div class="pin-pad">
-      <span class="eyebrow">Staff Access</span>
+      <span class="eyebrow">${eyebrow}</span>
       <h1>Enter PIN</h1>
       <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="8" />
       <button id="pin-submit" class="btn-primary">Enter</button>
       <p id="pin-error" class="error hidden">Wrong PIN</p>
+      ${onBack ? '<button id="pin-back" class="link-btn">Back</button>' : ""}
     </div>
   `;
   const input = container.querySelector("#pin-input");
@@ -15,7 +17,7 @@ function renderPinPad(container, page, onSuccess) {
   async function submit() {
     const pin = input.value.trim();
     if (!pin) return;
-    const ok = await login(page, pin);
+    const ok = await login(page, pin, counter);
     if (ok) {
       onSuccess();
     } else {
@@ -28,6 +30,9 @@ function renderPinPad(container, page, onSuccess) {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") submit();
   });
+  if (onBack) {
+    container.querySelector("#pin-back").addEventListener("click", onBack);
+  }
   input.focus();
 }
 

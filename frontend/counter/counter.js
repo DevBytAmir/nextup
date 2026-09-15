@@ -29,37 +29,11 @@ function renderCounterSelect(counterCount) {
 
 function renderCounterPinPad(counterId) {
   const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="pin-pad">
-      <span class="eyebrow">Counter ${counterId}</span>
-      <h1>Enter PIN</h1>
-      <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="8" />
-      <button id="pin-submit" class="btn-primary">Enter</button>
-      <p id="pin-error" class="error hidden">Wrong PIN</p>
-      <button id="pin-back" class="link-btn">Back</button>
-    </div>
-  `;
-  const input = document.getElementById("pin-input");
-  const error = document.getElementById("pin-error");
-
-  async function submit() {
-    const pin = input.value.trim();
-    if (!pin) return;
-    const ok = await login("counter", pin, counterId);
-    if (ok) {
-      afterLogin();
-    } else {
-      error.classList.remove("hidden");
-      input.value = "";
-    }
-  }
-
-  document.getElementById("pin-submit").addEventListener("click", submit);
-  document.getElementById("pin-back").addEventListener("click", initCounterFlow);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") submit();
+  renderPinPad(app, "counter", afterLogin, {
+    eyebrow: `Counter ${counterId}`,
+    counter: counterId,
+    onBack: initCounterFlow,
   });
-  input.focus();
 }
 
 async function afterLogin() {

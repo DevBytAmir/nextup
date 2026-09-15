@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
@@ -52,7 +54,7 @@ async def login(payload: LoginRequest, request: Request) -> LoginResponse:
 
 
 async def _persist_and_broadcast(request: Request) -> None:
-    save_state(request.app.state.data_path, request.app.state.queue_state)
+    await asyncio.to_thread(save_state, request.app.state.data_path, request.app.state.queue_state)
     await request.app.state.manager.broadcast(public_view(request.app.state.queue_state))
 
 

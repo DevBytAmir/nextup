@@ -140,6 +140,11 @@ function renderCounter(counterId, state) {
 
   doneBtn.addEventListener("click", async () => {
     const res = await apiPost("/api/counter/done", "counter");
+    if (res.status === 404) {
+      message.textContent = "That ticket is no longer yours to finish";
+      showIdle();
+      return;
+    }
     if (!res.ok) return;
     showIdle();
   });

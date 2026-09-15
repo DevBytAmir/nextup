@@ -9,6 +9,7 @@ async function initAdminPage() {
       <span class="eyebrow">Control Panel</span>
       <h1>Admin</h1>
       <section id="ticket-table"></section>
+      <p id="ticket-action-message"></p>
       <section class="settings-panel">
         <h2>Issue Numbers</h2>
         <label for="bulk-issue-count">How many numbers to issue at once</label>
@@ -185,5 +186,12 @@ async function handleAction(action, number, direction) {
     reorder: "/api/admin/reorder",
   };
   const body = action === "reorder" ? { number, direction } : { number };
-  await apiPost(paths[action], "admin", body);
+  const res = await apiPost(paths[action], "admin", body);
+  const message = document.getElementById("ticket-action-message");
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    message.textContent = errorBody?.detail || `Failed to ${action} ticket #${number}`;
+  } else {
+    message.textContent = "";
+  }
 }

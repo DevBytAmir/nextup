@@ -69,12 +69,14 @@ async function initAdminPage() {
   connectWs(renderTickets);
 }
 
+const MAX_BULK_ISSUE = 200;
+
 async function issueBulk() {
   const input = document.getElementById("bulk-issue-count");
   const message = document.getElementById("issue-bulk-message");
   const count = Number(input.value);
-  if (!Number.isInteger(count) || count < 1) {
-    message.textContent = "Enter a number of 1 or more";
+  if (!Number.isInteger(count) || count < 1 || count > MAX_BULK_ISSUE) {
+    message.textContent = `Enter a number between 1 and ${MAX_BULK_ISSUE}`;
     return;
   }
   const res = await apiPost("/api/admin/issue-bulk", "admin", { count });
@@ -184,15 +186,16 @@ function ticketRow(ticket, status) {
   return `<li><span class="ticket-number">#${ticket.number}</span> ${actions.join(" ")}</li>`;
 }
 
+const ACTION_PATHS = {
+  skip: "/api/admin/skip",
+  requeue: "/api/admin/requeue",
+  delete: "/api/admin/delete",
+  reorder: "/api/admin/reorder",
+};
+
 async function handleAction(action, number, direction) {
-  const paths = {
-    skip: "/api/admin/skip",
-    requeue: "/api/admin/requeue",
-    delete: "/api/admin/delete",
-    reorder: "/api/admin/reorder",
-  };
   const body = action === "reorder" ? { number, direction } : { number };
-  const res = await apiPost(paths[action], "admin", body);
+  const res = await apiPost(ACTION_PATHS[action], "admin", body);
   const message = document.getElementById("ticket-action-message");
   if (!res.ok) {
     const errorBody = await res.json().catch(() => null);

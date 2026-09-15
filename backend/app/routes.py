@@ -160,16 +160,22 @@ async def update_counters(payload: CounterPinsRequest, request: Request) -> dict
                 detail="new counters need a PIN",
             )
         new_count = len(resolved_pins)
-        active_out_of_range = any(
-            t.status == TicketStatus.CALLED and t.counter is not None and t.counter > new_count
+        touches_removed_counter = any(
+            t.status in (TicketStatus.CALLED, TicketStatus.SKIPPED)
+            and t.counter is not None
+            and t.counter > new_count
             for t in state.tickets
         )
-        if active_out_of_range:
+        if touches_removed_counter:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="finish or skip active tickets on the counters being removed first",
+                detail="finish, requeue, or delete tickets on the counters being removed first",
             )
         state.settings.counter_pins = resolved_pins
+        sessions = request.app.state.sessions
+        for i, old_pin in enumerate(existing_pins, start=1):
+            if i > new_count or resolved_pins[i - 1] != old_pin:
+                sessions.invalidate_counter(i)
         await _persist_and_broadcast(request)
     return {"counter_count": new_count}
 

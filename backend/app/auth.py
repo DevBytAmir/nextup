@@ -44,6 +44,11 @@ class SessionStore:
         entry = self._tokens.get(token)
         return entry[1] if entry else None
 
+    def invalidate_counter(self, counter: int) -> None:
+        """Drop every counter session bound to this counter number."""
+        for token in [t for t, entry in self._tokens.items() if entry == ("counter", counter)]:
+            del self._tokens[token]
+
 
 def require_page(page: str) -> Callable:
     async def dependency(request: Request) -> None:

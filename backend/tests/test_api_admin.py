@@ -166,6 +166,58 @@ def test_update_counters_blocks_shrink_below_active_counter(client):
     assert res.status_code == 409
 
 
+def test_update_counters_blocks_shrink_below_skipped_counter(client):
+    _issue_ticket(client)
+    counter_token = _login(client, "counter", "3333", counter=2)
+    client.post("/api/counter/call-next", headers=_auth_headers(counter_token))
+    skip_admin_token = _login(client, "admin", "9999")
+    skip_res = client.post(
+        "/api/admin/skip", json={"number": 1}, headers=_auth_headers(skip_admin_token)
+    )
+    assert skip_res.status_code == 200
+    assert skip_res.json()["counter"] == 2
+
+    res = client.post(
+        "/api/admin/counters",
+        json={"counter_pins": ["5555"]},
+        headers=_auth_headers(skip_admin_token),
+    )
+    assert res.status_code == 409
+
+
+def test_update_counters_invalidates_existing_counter_sessions(client):
+    counter_token = _login(client, "counter", "2222", counter=1)
+    who_before = client.get("/api/counter/whoami", headers=_auth_headers(counter_token))
+    assert who_before.status_code == 200
+
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/counters",
+        json={"counter_pins": ["5555", "6666"]},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+
+    who_after = client.get("/api/counter/whoami", headers=_auth_headers(counter_token))
+    assert who_after.status_code == 401
+
+
+def test_update_counters_keeps_unaffected_counter_sessions_valid(client):
+    counter1_token = _login(client, "counter", "2222", counter=1)
+
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/counters",
+        json={"counter_pins": ["", "", "7777"]},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+
+    who = client.get("/api/counter/whoami", headers=_auth_headers(counter1_token))
+    assert who.status_code == 200
+    assert who.json() == {"counter": 1}
+
+
 def test_update_sound_mode_changes_public_state(client):
     admin_token = _login(client, "admin", "9999")
 

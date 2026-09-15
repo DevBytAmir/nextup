@@ -7,12 +7,12 @@ async function initCounterPage() {
 
   const stored = Number(localStorage.getItem("queue_counter_id"));
   if (stored && stored >= 1 && stored <= counterCount) {
-    renderCounter(stored);
+    renderCounter(stored, counterCount);
     return;
   }
 
   if (counterCount === 1) {
-    chooseCounter(1);
+    chooseCounter(1, counterCount);
     return;
   }
 
@@ -33,17 +33,27 @@ function renderCounterSelect(counterCount) {
     </div>
   `;
   app.querySelectorAll("[data-counter]").forEach((btn) => {
-    btn.addEventListener("click", () => chooseCounter(Number(btn.dataset.counter)));
+    btn.addEventListener("click", () => chooseCounter(Number(btn.dataset.counter), counterCount));
   });
 }
 
-function chooseCounter(id) {
+function chooseCounter(id, counterCount) {
   localStorage.setItem("queue_counter_id", String(id));
-  renderCounter(id);
+  renderCounter(id, counterCount);
 }
 
-function renderCounter(counterId) {
+async function switchCounter() {
+  localStorage.removeItem("queue_counter_id");
+  const state = await (await apiGet("/api/state")).json();
+  renderCounterSelect(state.counter_count);
+}
+
+function renderCounter(counterId, counterCount) {
   const app = document.getElementById("app");
+  const switchLink =
+    counterCount > 1
+      ? '<button id="switch-counter-btn" class="link-btn">Switch counter</button>'
+      : "";
   app.innerHTML = `
     <div class="page counter-page">
       <span class="eyebrow">Now Serving</span>
@@ -55,8 +65,12 @@ function renderCounter(counterId) {
         <button id="done-btn" disabled>Done</button>
       </div>
       <p id="counter-message"></p>
+      ${switchLink}
     </div>
   `;
+  if (counterCount > 1) {
+    document.getElementById("switch-counter-btn").addEventListener("click", switchCounter);
+  }
   const currentNumber = document.getElementById("current-number");
   const callBtn = document.getElementById("call-next-btn");
   const recallBtn = document.getElementById("recall-btn");
@@ -84,7 +98,11 @@ function renderCounter(counterId) {
   callBtn.addEventListener("click", async () => {
     const res = await apiPost("/api/counter/call-next", "counter", { counter: counterId });
     if (res.status === 409) {
-      message.textContent = "No one waiting";
+      const body = await res.json().catch(() => null);
+      message.textContent =
+        body?.detail === "this counter already has an active ticket"
+          ? "You already have an active ticket"
+          : "No one waiting";
       return;
     }
     if (!res.ok) return;

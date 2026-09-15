@@ -42,3 +42,50 @@ def test_broadcast_with_no_connections_does_not_raise():
     import asyncio
 
     asyncio.run(manager.broadcast({"hello": "world"}))
+
+
+def test_broadcast_prunes_a_connection_that_fails_to_send():
+    import asyncio
+
+    class _FailingSocket:
+        async def send_text(self, _text: str) -> None:
+            raise RuntimeError("boom")
+
+    from backend.app.ws_manager import ConnectionManager
+
+    manager = ConnectionManager()
+    manager._connections.add(_FailingSocket())
+
+    asyncio.run(manager.broadcast({"hello": "world"}))
+
+    assert len(manager._connections) == 0
+
+
+def test_broadcast_reaches_every_client_even_if_one_disconnects_mid_send():
+    import asyncio
+
+    from backend.app.ws_manager import ConnectionManager
+
+    manager = ConnectionManager()
+    received: list[dict] = []
+
+    class _SlowThenDisconnectingSocket:
+        async def send_text(self, text: str) -> None:
+            # simulate this connection dropping out from under a concurrent
+            # broadcast before its own send would have completed
+            manager.disconnect(self)
+            raise RuntimeError("dropped")
+
+    class _NormalSocket:
+        async def send_text(self, text: str) -> None:
+            received.append(text)
+
+    dropping = _SlowThenDisconnectingSocket()
+    normal = _NormalSocket()
+    manager._connections.add(dropping)
+    manager._connections.add(normal)
+
+    asyncio.run(manager.broadcast({"hello": "world"}))
+
+    assert len(received) == 1
+    assert dropping not in manager._connections

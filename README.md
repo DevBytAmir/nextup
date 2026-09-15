@@ -32,6 +32,8 @@ spoken announcement, and an admin screen gives full manual control.
 ## Features
 
 - Single shared queue with sequential numbering
+- Bulk-issue numbers from the admin screen, for pre-registered attendees
+  or seeding the queue ahead of time
 - Any number of service counters, configurable at runtime, each with its
   own PIN
 - Live updates over WebSocket to every connected screen

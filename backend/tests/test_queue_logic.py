@@ -3,6 +3,7 @@ from backend.app.queue_logic import (
     call_next,
     delete_ticket,
     issue_number,
+    issue_numbers,
     mark_done,
     recall_previous,
     reorder_ticket,
@@ -23,6 +24,17 @@ def test_issue_number_creates_waiting_ticket_and_increments_counter():
     assert second.number == 2
     assert state.next_number == 3
     assert state.tickets == [first, second]
+
+
+def test_issue_numbers_creates_the_requested_count_in_sequence():
+    state = AppState()
+    issue_number(state)  # #1, so bulk issuing continues from #2
+
+    tickets = issue_numbers(state, 3)
+
+    assert [t.number for t in tickets] == [2, 3, 4]
+    assert all(t.status == TicketStatus.WAITING for t in tickets)
+    assert state.next_number == 5
 
 
 def test_call_next_returns_none_when_queue_empty():

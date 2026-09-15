@@ -10,6 +10,13 @@ async function initAdminPage() {
       <h1>Admin</h1>
       <section id="ticket-table"></section>
       <section class="settings-panel">
+        <h2>Issue Numbers</h2>
+        <label for="bulk-issue-count">How many numbers to issue at once</label>
+        <input id="bulk-issue-count" type="number" min="1" max="200" value="1" />
+        <button id="issue-bulk" class="btn-primary">Issue Numbers</button>
+        <p id="issue-bulk-message"></p>
+      </section>
+      <section class="settings-panel">
         <h2>Counters</h2>
         <label for="counter-count-input">Number of counters</label>
         <input id="counter-count-input" type="number" min="1" value="2" />
@@ -42,6 +49,8 @@ async function initAdminPage() {
     renderPinInputs(count);
   });
 
+  document.getElementById("issue-bulk").addEventListener("click", issueBulk);
+
   document.getElementById("save-counters").addEventListener("click", saveCounters);
 
   document.querySelectorAll('input[name="sound-mode"]').forEach((input) => {
@@ -51,6 +60,23 @@ async function initAdminPage() {
 
   renderTickets(state);
   connectWs(renderTickets);
+}
+
+async function issueBulk() {
+  const input = document.getElementById("bulk-issue-count");
+  const message = document.getElementById("issue-bulk-message");
+  const count = Number(input.value);
+  if (!Number.isInteger(count) || count < 1) {
+    message.textContent = "Enter a number of 1 or more";
+    return;
+  }
+  const res = await apiPost("/api/admin/issue-bulk", "admin", { count });
+  if (!res.ok) {
+    message.textContent = "Failed to issue numbers";
+    return;
+  }
+  const { tickets } = await res.json();
+  message.textContent = `Issued #${tickets[0].number}–#${tickets[tickets.length - 1].number}`;
 }
 
 async function saveSoundMode() {

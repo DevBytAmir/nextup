@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .auth import check_pin, require_page
 from .models import SoundMode, TicketStatus, public_view
@@ -10,6 +10,7 @@ from .queue_logic import (
     delete_ticket,
     has_active_ticket,
     issue_number,
+    issue_numbers,
     mark_done,
     recall_previous,
     reorder_ticket,
@@ -116,6 +117,18 @@ async def reorder_route(payload: ReorderRequest, request: Request) -> dict:
             )
         await _persist_and_broadcast(request)
     return {"reordered": True}
+
+
+class BulkIssueRequest(BaseModel):
+    count: int = Field(ge=1, le=200)
+
+
+@router.post("/admin/issue-bulk", dependencies=[Depends(require_page("admin"))])
+async def issue_bulk_route(payload: BulkIssueRequest, request: Request) -> dict:
+    async with request.app.state.lock:
+        tickets = issue_numbers(request.app.state.queue_state, payload.count)
+        await _persist_and_broadcast(request)
+    return {"tickets": [t.model_dump(mode="json") for t in tickets]}
 
 
 @router.post("/admin/counters", dependencies=[Depends(require_page("admin"))])

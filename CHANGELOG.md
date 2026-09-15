@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recall-previous, so a counter can undo its last served or skipped ticket.
 - Configurable number of counters, each with its own PIN, changeable
   without retyping unchanged PINs.
+- Bulk-issue numbers from the admin screen, for pre-registered attendees
+  or seeding the queue ahead of time.
 - Optional beep or spoken announcement on the TV display when a number is
   called.
 - Mobile-responsive layout across all four pages.

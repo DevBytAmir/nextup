@@ -20,6 +20,7 @@ def test_admin_routes_require_admin_token(client):
         ("/api/admin/reorder", {"number": 1, "direction": "up"}),
         ("/api/admin/counters", {"counter_pins": ["5555"]}),
         ("/api/admin/sound-mode", {"sound_mode": "beep"}),
+        ("/api/admin/issue-bulk", {"count": 5}),
     ]:
         res = client.post(path, json=body)
         assert res.status_code == 401, path
@@ -189,6 +190,36 @@ def test_update_sound_mode_rejects_unknown_value(client):
         "/api/admin/sound-mode",
         json={"sound_mode": "loud"},
         headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 422
+
+
+def test_issue_bulk_creates_the_requested_count_of_tickets(client):
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/issue-bulk", json={"count": 3}, headers=_auth_headers(admin_token)
+    )
+    assert res.status_code == 200
+    tickets = res.json()["tickets"]
+    assert [t["number"] for t in tickets] == [1, 2, 3]
+    assert all(t["status"] == "waiting" for t in tickets)
+
+    state = client.get("/api/state").json()
+    assert len(state["tickets"]) == 3
+
+
+def test_issue_bulk_rejects_zero_or_negative_count(client):
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/issue-bulk", json={"count": 0}, headers=_auth_headers(admin_token)
+    )
+    assert res.status_code == 422
+
+
+def test_issue_bulk_rejects_count_above_the_cap(client):
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/issue-bulk", json={"count": 201}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 422
 

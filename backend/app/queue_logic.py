@@ -15,6 +15,10 @@ def issue_number(state: AppState) -> Ticket:
     return ticket
 
 
+def issue_numbers(state: AppState, count: int) -> list[Ticket]:
+    return [issue_number(state) for _ in range(count)]
+
+
 def has_active_ticket(state: AppState, counter: int) -> bool:
     return any(t.status == TicketStatus.CALLED and t.counter == counter for t in state.tickets)
 

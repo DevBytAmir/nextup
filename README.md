@@ -4,10 +4,10 @@
 
 Self-hosted, realtime take-a-number queueing system.
 
-![CI](https://github.com/DevBytAmir/nextup/actions/workflows/ci.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
+[![CI](https://img.shields.io/github/actions/workflow/status/DevBytAmir/nextup/ci.yml?branch=main&style=for-the-badge&label=CI&labelColor=1f1b16&color=ff6a1a)](https://github.com/DevBytAmir/nextup/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/Version-0.1.0-d94f00?style=for-the-badge&labelColor=1f1b16)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/License-Apache%202.0-8a8478?style=for-the-badge&labelColor=1f1b16)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-ff6a1a?style=for-the-badge&labelColor=1f1b16)](pyproject.toml)
 
 </div>
 

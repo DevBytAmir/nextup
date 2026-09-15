@@ -185,6 +185,25 @@ def test_update_counters_blocks_shrink_below_skipped_counter(client):
     assert res.status_code == 409
 
 
+def test_update_counters_clears_stale_counter_on_served_tickets(client):
+    _issue_ticket(client)
+    counter_token = _login(client, "counter", "3333", counter=2)
+    client.post("/api/counter/call-next", headers=_auth_headers(counter_token))
+    client.post("/api/counter/done", headers=_auth_headers(counter_token))
+
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/counters",
+        json={"counter_pins": ["5555"]},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+
+    state = client.get("/api/state").json()
+    assert state["tickets"][0]["status"] == "served"
+    assert state["tickets"][0]["counter"] is None
+
+
 def test_update_counters_invalidates_existing_counter_sessions(client):
     counter_token = _login(client, "counter", "2222", counter=1)
     who_before = client.get("/api/counter/whoami", headers=_auth_headers(counter_token))

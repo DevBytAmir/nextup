@@ -182,6 +182,10 @@ async def update_counters(payload: CounterPinsRequest, request: Request) -> dict
                 status_code=status.HTTP_409_CONFLICT,
                 detail="finish, requeue, or delete tickets on the counters being removed first",
             )
+        # clear stale counter links so a reused number can't recall_previous a served ticket
+        for t in state.tickets:
+            if t.status == TicketStatus.SERVED and t.counter is not None and t.counter > new_count:
+                t.counter = None
         state.settings.counter_pins = resolved_pins
         sessions = request.app.state.sessions
         for i, old_pin in enumerate(existing_pins, start=1):

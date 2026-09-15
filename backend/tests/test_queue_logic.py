@@ -151,6 +151,20 @@ def test_requeue_ticket_moves_skipped_ticket_to_back_of_waiting_order():
     assert requeued.order > next(t for t in state.tickets if t.number == 2).order
 
 
+def test_requeue_ticket_order_never_collides_with_a_later_issued_ticket():
+    state = AppState()
+    issue_number(state)  # #1
+    issue_number(state)  # #2
+    skip_ticket(state, number=1)
+    requeue_ticket(state, number=1)
+
+    later = issue_number(state)  # #3, issued after the requeue
+
+    ordered = sorted(state.tickets, key=lambda t: t.order)
+    assert [t.number for t in ordered] == [2, 1, 3]
+    assert later.order != next(t for t in state.tickets if t.number == 1).order
+
+
 def test_requeue_ticket_returns_none_for_already_waiting_ticket():
     state = AppState()
     issue_number(state)

@@ -123,12 +123,25 @@ function renderCounter(counterId, state) {
     showIdle();
   });
 
-  const activeTicket = state.tickets.find(
-    (t) => t.status === "called" && t.counter === counterId
-  );
-  if (activeTicket) {
-    showActive(activeTicket);
+  function syncFromState(latestState) {
+    const active = latestState.tickets.find(
+      (t) => t.status === "called" && t.counter === counterId
+    );
+    const shownNumber = currentNumber.classList.contains("led-number--idle")
+      ? null
+      : currentNumber.textContent;
+    if (active) {
+      if (shownNumber !== `#${active.number}`) {
+        showActive(active);
+      }
+    } else if (shownNumber !== null) {
+      message.textContent = "That ticket is no longer yours to finish";
+      showIdle();
+    }
   }
+
+  syncFromState(state);
+  connectWs(syncFromState);
 }
 
 function replayFlicker(el) {

@@ -8,10 +8,11 @@ def issue_number(state: AppState) -> Ticket:
         number=state.next_number,
         status=TicketStatus.WAITING,
         counter=None,
-        order=state.next_number,
+        order=state.next_order,
     )
     state.tickets.append(ticket)
     state.next_number += 1
+    state.next_order += 1
     return ticket
 
 
@@ -20,9 +21,7 @@ def issue_numbers(state: AppState, count: int) -> list[Ticket]:
 
 
 def _touch(state: AppState, ticket: Ticket) -> None:
-    """Stamp a ticket with the current action sequence, so recency can be
-    told apart from ticket number once requeuing lets tickets serve out of
-    numeric order."""
+    """Stamp a ticket with the current action sequence, for true recency."""
     ticket.touched_at = state.next_sequence
     state.next_sequence += 1
 
@@ -69,10 +68,11 @@ def requeue_ticket(state: AppState, number: int) -> Ticket | None:
     ticket = _find(state, number)
     if ticket is None or ticket.status == TicketStatus.WAITING:
         return None
-    max_order = max((t.order for t in state.tickets), default=0)
     ticket.status = TicketStatus.WAITING
     ticket.counter = None
-    ticket.order = max_order + 1
+    ticket.order = state.next_order
+    state.next_order += 1
+    _touch(state, ticket)
     return ticket
 
 

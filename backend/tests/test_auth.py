@@ -91,6 +91,22 @@ def test_invalidate_counter_drops_only_sessions_for_that_counter():
     assert sessions.is_valid(admin_token, "admin") is True
 
 
+def test_revoke_drops_the_single_token():
+    sessions = SessionStore()
+    admin_token = sessions.create("admin")
+    other_token = sessions.create("number")
+
+    sessions.revoke(admin_token)
+
+    assert sessions.is_valid(admin_token, "admin") is False
+    assert sessions.is_valid(other_token, "number") is True
+
+
+def test_revoke_unknown_token_does_not_raise():
+    sessions = SessionStore()
+    sessions.revoke("not-a-real-token")
+
+
 class _FakeApp:
     def __init__(self, sessions: SessionStore) -> None:
         self.state = type("S", (), {"sessions": sessions})()

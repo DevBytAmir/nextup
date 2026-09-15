@@ -9,11 +9,17 @@ function initNumberPage() {
       <button id="issue-btn" class="btn-primary">Take a Number</button>
       <div id="last-issued"></div>
       <ul id="recent-list"></ul>
+      <button id="logout-btn" class="link-btn">Log out</button>
     </div>
   `;
   const recentList = document.getElementById("recent-list");
   const lastIssued = document.getElementById("last-issued");
   const issued = [];
+
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    await logout("number");
+    location.reload();
+  });
 
   document.getElementById("issue-btn").addEventListener("click", async () => {
     const res = await apiPost("/api/number/issue", "number");

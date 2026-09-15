@@ -8,6 +8,7 @@ async function initAdminPage() {
     <div class="page admin-page">
       <span class="eyebrow">Control Panel</span>
       <h1>Admin</h1>
+      <button id="logout-btn" class="link-btn">Log out</button>
       <section id="ticket-table"></section>
       <p id="ticket-action-message"></p>
       <section class="settings-panel">
@@ -38,6 +39,11 @@ async function initAdminPage() {
       </section>
     </div>
   `;
+
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    await logout("admin");
+    location.reload();
+  });
 
   const state = await (await apiGet("/api/state")).json();
   currentCounterCount = state.counter_count;

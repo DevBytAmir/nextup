@@ -53,6 +53,15 @@ async def login(payload: LoginRequest, request: Request) -> LoginResponse:
     return LoginResponse(token=token, counter=payload.counter)
 
 
+@router.post("/logout")
+async def logout(request: Request) -> dict:
+    header = request.headers.get("Authorization", "")
+    token = header.removeprefix("Bearer ").strip()
+    if token:
+        request.app.state.sessions.revoke(token)
+    return {"loggedOut": True}
+
+
 async def _persist_and_broadcast(request: Request) -> None:
     await asyncio.to_thread(save_state, request.app.state.data_path, request.app.state.queue_state)
     await request.app.state.manager.broadcast(public_view(request.app.state.queue_state))

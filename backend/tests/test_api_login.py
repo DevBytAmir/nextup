@@ -31,3 +31,21 @@ def test_login_rejects_a_counter_pin_used_for_a_different_counter(client):
 def test_login_for_counter_page_without_counter_returns_400(client):
     res = client.post("/api/login", json={"page": "counter", "pin": "2222"})
     assert res.status_code == 400
+
+
+def test_logout_revokes_the_token(client):
+    login_res = client.post("/api/login", json={"page": "admin", "pin": "9999"})
+    token = login_res.json()["token"]
+
+    logout_res = client.post("/api/logout", headers={"Authorization": f"Bearer {token}"})
+    assert logout_res.status_code == 200
+
+    res = client.post(
+        "/api/admin/skip", json={"number": 1}, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert res.status_code == 401
+
+
+def test_logout_without_a_token_does_not_error(client):
+    res = client.post("/api/logout")
+    assert res.status_code == 200

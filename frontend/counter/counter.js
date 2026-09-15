@@ -60,8 +60,8 @@ function renderCounter(counterId, state) {
       <button id="switch-counter-btn" class="link-btn">Switch counter</button>
     </div>
   `;
-  document.getElementById("switch-counter-btn").addEventListener("click", () => {
-    clearToken("counter");
+  document.getElementById("switch-counter-btn").addEventListener("click", async () => {
+    await logout("counter");
     initCounterFlow();
   });
   const currentNumber = document.getElementById("current-number");

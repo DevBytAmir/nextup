@@ -49,6 +49,9 @@ class SessionStore:
         for token in [t for t, entry in self._tokens.items() if entry == ("counter", counter)]:
             del self._tokens[token]
 
+    def revoke(self, token: str) -> None:
+        self._tokens.pop(token, None)
+
 
 def require_page(page: str) -> Callable:
     async def dependency(request: Request) -> None:

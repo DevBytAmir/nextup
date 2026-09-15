@@ -1,5 +1,7 @@
 requireAuth("admin", initAdminPage);
 
+let currentCounterCount = 0;
+
 async function initAdminPage() {
   const app = document.getElementById("app");
   app.innerHTML = `
@@ -30,9 +32,10 @@ async function initAdminPage() {
   `;
 
   const state = await (await apiGet("/api/state")).json();
+  currentCounterCount = state.counter_count;
   const countInput = document.getElementById("counter-count-input");
-  countInput.value = state.counter_count;
-  renderPinInputs(state.counter_count);
+  countInput.value = currentCounterCount;
+  renderPinInputs(currentCounterCount);
 
   countInput.addEventListener("input", () => {
     const count = Math.max(1, Number(countInput.value) || 1);
@@ -74,11 +77,11 @@ function escapeHtml(value) {
 function renderPinInputs(count) {
   const container = document.getElementById("counter-pin-inputs");
   const existing = Array.from(container.querySelectorAll("input")).map((el) => el.value);
-  container.innerHTML = Array.from(
-    { length: count },
-    (_, i) =>
-      `<input data-pin-index="${i}" placeholder="Counter ${i + 1} PIN" value="${escapeHtml(existing[i] || "")}" />`
-  ).join("");
+  container.innerHTML = Array.from({ length: count }, (_, i) => {
+    const placeholder =
+      i < currentCounterCount ? "Leave blank to keep current PIN" : `New counter ${i + 1} PIN`;
+    return `<input data-pin-index="${i}" placeholder="${placeholder}" value="${escapeHtml(existing[i] || "")}" />`;
+  }).join("");
 }
 
 async function saveCounters() {
@@ -86,12 +89,18 @@ async function saveCounters() {
     el.value.trim()
   );
   const message = document.getElementById("settings-message");
-  if (!pins.length || pins.some((p) => !p)) {
-    message.textContent = "Every counter needs a PIN";
+  const missingNewPin = pins.some((p, i) => !p && i >= currentCounterCount);
+  if (!pins.length || missingNewPin) {
+    message.textContent = "New counters need a PIN";
     return;
   }
   const res = await apiPost("/api/admin/counters", "admin", { counter_pins: pins });
   message.textContent = res.ok ? "Saved" : "Failed to save";
+  if (res.ok) {
+    currentCounterCount = pins.length;
+    document.querySelectorAll("[data-pin-index]").forEach((el) => (el.value = ""));
+    renderPinInputs(currentCounterCount);
+  }
 }
 
 function renderTickets(state) {

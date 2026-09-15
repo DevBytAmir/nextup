@@ -121,14 +121,25 @@ async def reorder_route(payload: ReorderRequest, request: Request) -> dict:
 @router.post("/admin/counters", dependencies=[Depends(require_page("admin"))])
 async def update_counters(payload: CounterPinsRequest, request: Request) -> dict:
     pins = [p.strip() for p in payload.counter_pins]
-    if not pins or any(not p for p in pins):
+    if not pins:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="need at least one non-empty counter PIN",
+            detail="need at least one counter",
         )
     async with request.app.state.lock:
         state = request.app.state.queue_state
-        new_count = len(pins)
+        existing_pins = state.settings.counter_pins
+        # blank entry = keep the current PIN for that counter
+        resolved_pins = [
+            pin or (existing_pins[i] if i < len(existing_pins) else "")
+            for i, pin in enumerate(pins)
+        ]
+        if any(not p for p in resolved_pins):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="new counters need a PIN",
+            )
+        new_count = len(resolved_pins)
         active_out_of_range = any(
             t.status == TicketStatus.CALLED and t.counter is not None and t.counter > new_count
             for t in state.tickets
@@ -138,7 +149,7 @@ async def update_counters(payload: CounterPinsRequest, request: Request) -> dict
                 status_code=status.HTTP_409_CONFLICT,
                 detail="finish or skip active tickets on the counters being removed first",
             )
-        state.settings.counter_pins = pins
+        state.settings.counter_pins = resolved_pins
         await _persist_and_broadcast(request)
     return {"counter_count": new_count}
 

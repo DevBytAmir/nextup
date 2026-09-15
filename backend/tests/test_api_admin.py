@@ -122,11 +122,27 @@ def test_update_counters_rejects_empty_list(client):
     assert res.status_code == 400
 
 
-def test_update_counters_rejects_blank_pin(client):
+def test_update_counters_blank_pin_keeps_existing_pin(client):
     admin_token = _login(client, "admin", "9999")
     res = client.post(
         "/api/admin/counters",
         json={"counter_pins": ["1234", "  "]},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+
+    changed_login = client.post("/api/login", json={"page": "counter", "pin": "1234"})
+    assert changed_login.status_code == 200
+
+    unchanged_login = client.post("/api/login", json={"page": "counter", "pin": "3333"})
+    assert unchanged_login.status_code == 200
+
+
+def test_update_counters_rejects_blank_pin_for_new_counter(client):
+    admin_token = _login(client, "admin", "9999")
+    res = client.post(
+        "/api/admin/counters",
+        json={"counter_pins": ["2222", "3333", ""]},
         headers=_auth_headers(admin_token),
     )
     assert res.status_code == 400

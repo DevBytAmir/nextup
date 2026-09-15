@@ -14,9 +14,9 @@ Self-hosted, realtime take-a-number queueing system.
 ---
 
 NextUp runs a shared queue for any walk-up service line: one screen issues
-sequential numbers, two counters serve customers from that single line, a
-TV or monitor shows live queue status, and an admin screen gives full
-manual control.
+sequential numbers, any number of counters serve customers from that single
+line, a TV or monitor shows live queue status with an optional beep or
+spoken announcement, and an admin screen gives full manual control.
 
 <div align="center">
 
@@ -29,6 +29,20 @@ manual control.
 
 </div>
 
+## Features
+
+- Single shared queue with sequential numbering
+- Any number of service counters, configurable at runtime, each with its
+  own PIN
+- Live updates over WebSocket to every connected screen
+- Skip, requeue, reorder, delete, and recall-previous, all from the admin
+  screen
+- Optional beep or spoken announcement when a number is called
+- PIN-protected staff pages; PINs are never sent to a client
+- Mobile-responsive layout
+- Single-file JSON persistence with crash-safe atomic writes, no database
+  required
+
 ## Architecture
 
 - **Backend** — FastAPI and Uvicorn, single process, a single `asyncio.Lock`
@@ -37,7 +51,7 @@ manual control.
 - **Realtime** — one `/ws` WebSocket endpoint; every mutation broadcasts the
   updated queue to all connected pages.
 - **Persistence** — a single `data/state.json` file, loaded at startup and
-  rewritten after every mutation.
+  rewritten atomically after every mutation.
 - **Frontend** — plain HTML, CSS, and vanilla JavaScript. No build step, no
   framework.
 

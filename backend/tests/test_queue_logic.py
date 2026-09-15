@@ -214,6 +214,23 @@ def test_recall_previous_recalls_most_recently_served_ticket_for_that_counter():
     assert recalled.counter == 1
 
 
+def test_recall_previous_uses_actual_recency_not_ticket_number():
+    state = AppState()
+    issue_number(state)  # #1
+    issue_number(state)  # #2
+    call_next(state, counter=1)  # claims #1
+    mark_done(state, counter=1)  # #1 served
+    requeue_ticket(state, number=1)  # #1 back to waiting, now behind #2
+    call_next(state, counter=1)  # claims #2
+    mark_done(state, counter=1)  # #2 served
+    call_next(state, counter=1)  # claims #1 again (the true most recent)
+    mark_done(state, counter=1)  # #1 served again, more recently than #2
+
+    recalled = recall_previous(state, counter=1)
+
+    assert recalled.number == 1
+
+
 def test_recall_previous_recalls_a_skipped_ticket_too():
     state = AppState()
     issue_number(state)

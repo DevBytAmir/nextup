@@ -19,6 +19,14 @@ def issue_numbers(state: AppState, count: int) -> list[Ticket]:
     return [issue_number(state) for _ in range(count)]
 
 
+def _touch(state: AppState, ticket: Ticket) -> None:
+    """Stamp a ticket with the current action sequence, so recency can be
+    told apart from ticket number once requeuing lets tickets serve out of
+    numeric order."""
+    ticket.touched_at = state.next_sequence
+    state.next_sequence += 1
+
+
 def has_active_ticket(state: AppState, counter: int) -> bool:
     return any(t.status == TicketStatus.CALLED and t.counter == counter for t in state.tickets)
 
@@ -32,6 +40,7 @@ def call_next(state: AppState, counter: int) -> Ticket | None:
     ticket = min(waiting, key=lambda t: t.order)
     ticket.status = TicketStatus.CALLED
     ticket.counter = counter
+    _touch(state, ticket)
     return ticket
 
 
@@ -39,6 +48,7 @@ def mark_done(state: AppState, counter: int) -> Ticket | None:
     for ticket in state.tickets:
         if ticket.status == TicketStatus.CALLED and ticket.counter == counter:
             ticket.status = TicketStatus.SERVED
+            _touch(state, ticket)
             return ticket
     return None
 
@@ -50,6 +60,7 @@ def skip_ticket(state: AppState, number: int) -> Ticket | None:
     if ticket is None or ticket.status not in (TicketStatus.WAITING, TicketStatus.CALLED):
         return None
     ticket.status = TicketStatus.SKIPPED
+    _touch(state, ticket)
     return ticket
 
 
@@ -76,8 +87,9 @@ def recall_previous(state: AppState, counter: int) -> Ticket | None:
     ]
     if not candidates:
         return None
-    ticket = max(candidates, key=lambda t: t.number)
+    ticket = max(candidates, key=lambda t: t.touched_at)
     ticket.status = TicketStatus.CALLED
+    _touch(state, ticket)
     return ticket
 
 

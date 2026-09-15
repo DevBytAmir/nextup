@@ -23,6 +23,7 @@ class Ticket(BaseModel):
     status: TicketStatus = TicketStatus.WAITING
     counter: int | None = None
     order: int
+    touched_at: int = 0
 
 
 class Settings(BaseModel):
@@ -35,6 +36,7 @@ class Settings(BaseModel):
 class AppState(BaseModel):
     tickets: list[Ticket] = Field(default_factory=list)
     next_number: int = 1
+    next_sequence: int = 1
     settings: Settings = Field(default_factory=Settings)
 
 

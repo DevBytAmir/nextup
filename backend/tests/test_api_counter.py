@@ -118,7 +118,10 @@ def test_recall_previous_undoes_a_misclicked_done(client):
 
     res = client.post("/api/counter/recall-previous", headers=_auth_headers(counter_token))
     assert res.status_code == 200
-    assert res.json() == {"number": 1, "status": "called", "counter": 1, "order": 1}
+    body = res.json()
+    assert body["number"] == 1
+    assert body["status"] == "called"
+    assert body["counter"] == 1
 
 
 async def test_simultaneous_call_next_from_both_counters_never_double_claims(app):

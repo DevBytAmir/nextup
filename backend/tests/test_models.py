@@ -25,7 +25,9 @@ def test_public_view_excludes_settings_and_pins():
     state = AppState(tickets=[Ticket(number=1, order=1)], next_number=2)
     view = public_view(state)
     assert view == {
-        "tickets": [{"number": 1, "status": "waiting", "counter": None, "order": 1}],
+        "tickets": [
+            {"number": 1, "status": "waiting", "counter": None, "order": 1, "touched_at": 0}
+        ],
         "next_number": 2,
         "counter_count": 2,
         "sound_mode": "off",

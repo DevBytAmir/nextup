@@ -1,6 +1,6 @@
 [project]
 name = "nextup"
-version = "0.1.0"
+version = "1.0.0"
 description = "Realtime queueing system for walk-up service lines"
 readme = "README.md"
 license = "Apache-2.0"

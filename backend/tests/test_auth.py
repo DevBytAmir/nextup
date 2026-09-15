@@ -1,19 +1,19 @@
 import pytest
 from fastapi import HTTPException
 
-from backend.app.auth import SessionStore, check_pin, require_page
+from backend.app.auth import (
+    SessionStore,
+    check_counter_pin,
+    check_pin,
+    require_counter,
+    require_page,
+)
 from backend.app.models import Settings
 
 
 def test_check_pin_accepts_numbering_pin_for_number_page():
     settings = Settings()
     assert check_pin("number", settings.numbering_pin, settings) is True
-
-
-def test_check_pin_accepts_either_counter_pin_for_counter_page():
-    settings = Settings()
-    assert check_pin("counter", settings.counter_pins[0], settings) is True
-    assert check_pin("counter", settings.counter_pins[1], settings) is True
 
 
 def test_check_pin_accepts_admin_pin_for_admin_page():
@@ -31,6 +31,24 @@ def test_check_pin_rejects_unknown_page():
     assert check_pin("tv", "0000", settings) is False
 
 
+def test_check_counter_pin_accepts_a_counters_own_pin():
+    settings = Settings()
+    assert check_counter_pin(1, settings.counter_pins[0], settings) is True
+    assert check_counter_pin(2, settings.counter_pins[1], settings) is True
+
+
+def test_check_counter_pin_rejects_another_counters_pin():
+    settings = Settings()
+    assert check_counter_pin(1, settings.counter_pins[1], settings) is False
+    assert check_counter_pin(2, settings.counter_pins[0], settings) is False
+
+
+def test_check_counter_pin_rejects_out_of_range_counter():
+    settings = Settings()
+    assert check_counter_pin(0, settings.counter_pins[0], settings) is False
+    assert check_counter_pin(99, settings.counter_pins[0], settings) is False
+
+
 def test_session_store_create_and_validate_round_trip():
     sessions = SessionStore()
     token = sessions.create("admin")
@@ -38,6 +56,21 @@ def test_session_store_create_and_validate_round_trip():
     assert sessions.page_for(token) == "admin"
     assert sessions.is_valid(token, "admin") is True
     assert sessions.is_valid(token, "number") is False
+
+
+def test_session_store_binds_a_counter_number():
+    sessions = SessionStore()
+    token = sessions.create("counter", 2)
+
+    assert sessions.is_valid(token, "counter") is True
+    assert sessions.counter_for(token) == 2
+
+
+def test_session_store_counter_for_returns_none_for_non_counter_sessions():
+    sessions = SessionStore()
+    token = sessions.create("admin")
+
+    assert sessions.counter_for(token) is None
 
 
 def test_session_store_rejects_unknown_token():
@@ -80,4 +113,28 @@ async def test_require_page_raises_401_with_token_for_wrong_page():
 
     with pytest.raises(HTTPException) as exc_info:
         await dependency(_FakeRequest(sessions, f"Bearer {token}"))
+    assert exc_info.value.status_code == 401
+
+
+async def test_require_counter_returns_the_bound_counter_number():
+    sessions = SessionStore()
+    token = sessions.create("counter", 2)
+
+    assert await require_counter(_FakeRequest(sessions, f"Bearer {token}")) == 2
+
+
+async def test_require_counter_raises_401_with_missing_token():
+    sessions = SessionStore()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await require_counter(_FakeRequest(sessions, None))
+    assert exc_info.value.status_code == 401
+
+
+async def test_require_counter_raises_401_for_a_non_counter_session():
+    sessions = SessionStore()
+    token = sessions.create("admin")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await require_counter(_FakeRequest(sessions, f"Bearer {token}"))
     assert exc_info.value.status_code == 401

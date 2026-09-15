@@ -1,5 +1,5 @@
-def _login(client, page, pin):
-    res = client.post("/api/login", json={"page": page, "pin": pin})
+def _login(client, page, pin, counter=None):
+    res = client.post("/api/login", json={"page": page, "pin": pin, "counter": counter})
     return res.json()["token"]
 
 
@@ -108,7 +108,7 @@ def test_update_counters_changes_pins_and_count(client):
     assert res.status_code == 200
     assert res.json() == {"counter_count": 3}
 
-    login_res = client.post("/api/login", json={"page": "counter", "pin": "5555"})
+    login_res = client.post("/api/login", json={"page": "counter", "pin": "5555", "counter": 1})
     assert login_res.status_code == 200
 
     state = client.get("/api/state").json()
@@ -132,10 +132,12 @@ def test_update_counters_blank_pin_keeps_existing_pin(client):
     )
     assert res.status_code == 200
 
-    changed_login = client.post("/api/login", json={"page": "counter", "pin": "1234"})
+    changed_login = client.post("/api/login", json={"page": "counter", "pin": "1234", "counter": 1})
     assert changed_login.status_code == 200
 
-    unchanged_login = client.post("/api/login", json={"page": "counter", "pin": "3333"})
+    unchanged_login = client.post(
+        "/api/login", json={"page": "counter", "pin": "3333", "counter": 2}
+    )
     assert unchanged_login.status_code == 200
 
 
@@ -151,10 +153,8 @@ def test_update_counters_rejects_blank_pin_for_new_counter(client):
 
 def test_update_counters_blocks_shrink_below_active_counter(client):
     _issue_ticket(client)
-    counter_token = _login(client, "counter", "3333")
-    call_res = client.post(
-        "/api/counter/call-next", json={"counter": 2}, headers=_auth_headers(counter_token)
-    )
+    counter_token = _login(client, "counter", "3333", counter=2)
+    call_res = client.post("/api/counter/call-next", headers=_auth_headers(counter_token))
     assert call_res.status_code == 200
 
     admin_token = _login(client, "admin", "9999")
@@ -226,9 +226,9 @@ def test_issue_bulk_rejects_count_above_the_cap(client):
 
 def test_requeue_ticket_from_served_status(client):
     _issue_ticket(client)
-    counter_token = _login(client, "counter", "2222")
-    client.post("/api/counter/call-next", json={"counter": 1}, headers=_auth_headers(counter_token))
-    client.post("/api/counter/done", json={"counter": 1}, headers=_auth_headers(counter_token))
+    counter_token = _login(client, "counter", "2222", counter=1)
+    client.post("/api/counter/call-next", headers=_auth_headers(counter_token))
+    client.post("/api/counter/done", headers=_auth_headers(counter_token))
 
     admin_token = _login(client, "admin", "9999")
     res = client.post("/api/admin/requeue", json={"number": 1}, headers=_auth_headers(admin_token))

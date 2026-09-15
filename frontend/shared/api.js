@@ -12,11 +12,11 @@ function clearToken(page) {
   localStorage.removeItem(TOKEN_KEY_PREFIX + page);
 }
 
-async function login(page, pin) {
+async function login(page, pin, counter) {
   const res = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, pin }),
+    body: JSON.stringify({ page, pin, counter }),
   });
   if (!res.ok) return false;
   const data = await res.json();
@@ -43,4 +43,16 @@ async function apiPost(path, page, body) {
 
 async function apiGet(path) {
   return fetch(path);
+}
+
+async function apiGetAuthed(path, page) {
+  const token = getToken(page);
+  const res = await fetch(path, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401) {
+    clearToken(page);
+    location.reload();
+  }
+  return res;
 }

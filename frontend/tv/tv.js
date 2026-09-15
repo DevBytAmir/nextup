@@ -50,14 +50,14 @@ function unlockAudio() {
       audioCtx.resume();
     }
   } catch {
-    // Web Audio unavailable — beep will just stay silent
+    // Web Audio unavailable: beep will just stay silent
   }
   try {
     if (typeof speechSynthesis !== "undefined") {
       speechSynthesis.speak(new SpeechSynthesisUtterance(""));
     }
   } catch {
-    // speech synthesis unavailable — announce will just stay silent
+    // speech synthesis unavailable: announce will just stay silent
   }
   document.getElementById("tv-unlock-hint")?.classList.add("hidden");
 }
@@ -74,7 +74,7 @@ function loadAndRender() {
       render(state);
     })
     .catch((err) => {
-      statusEl.textContent = `Connection issue, retrying… (${err.message})`;
+      statusEl.textContent = `Connection issue, retrying... (${err.message})`;
       statusEl.classList.remove("hidden");
     });
 }
@@ -105,7 +105,7 @@ function beep() {
     playTone(1046.5, audioCtx.currentTime, 0.22);
     playTone(783.99, audioCtx.currentTime + 0.2, 0.32);
   } catch {
-    // audio unavailable/blocked — the visual update already happened
+    // audio unavailable/blocked: the visual update already happened
   }
 }
 

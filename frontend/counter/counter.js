@@ -1,22 +1,12 @@
-requireAuth("counter", initCounterPage);
+initCounterFlow();
 
-async function initCounterPage() {
-  const res = await apiGet("/api/state");
-  const state = await res.json();
-  const counterCount = state.counter_count;
-
-  const stored = Number(localStorage.getItem("queue_counter_id"));
-  if (stored && stored >= 1 && stored <= counterCount) {
-    renderCounter(stored, counterCount, state);
+async function initCounterFlow() {
+  if (getToken("counter")) {
+    afterLogin();
     return;
   }
-
-  if (counterCount === 1) {
-    chooseCounter(1, counterCount);
-    return;
-  }
-
-  renderCounterSelect(counterCount);
+  const state = await (await apiGet("/api/state")).json();
+  renderCounterSelect(state.counter_count);
 }
 
 function renderCounterSelect(counterCount) {
@@ -33,28 +23,55 @@ function renderCounterSelect(counterCount) {
     </div>
   `;
   app.querySelectorAll("[data-counter]").forEach((btn) => {
-    btn.addEventListener("click", () => chooseCounter(Number(btn.dataset.counter), counterCount));
+    btn.addEventListener("click", () => renderCounterPinPad(Number(btn.dataset.counter)));
   });
 }
 
-async function chooseCounter(id, counterCount) {
-  localStorage.setItem("queue_counter_id", String(id));
-  const state = await (await apiGet("/api/state")).json();
-  renderCounter(id, counterCount, state);
-}
-
-async function switchCounter() {
-  localStorage.removeItem("queue_counter_id");
-  const state = await (await apiGet("/api/state")).json();
-  renderCounterSelect(state.counter_count);
-}
-
-function renderCounter(counterId, counterCount, state) {
+function renderCounterPinPad(counterId) {
   const app = document.getElementById("app");
-  const switchLink =
-    counterCount > 1
-      ? '<button id="switch-counter-btn" class="link-btn">Switch counter</button>'
-      : "";
+  app.innerHTML = `
+    <div class="pin-pad">
+      <span class="eyebrow">Counter ${counterId}</span>
+      <h1>Enter PIN</h1>
+      <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="8" />
+      <button id="pin-submit" class="btn-primary">Enter</button>
+      <p id="pin-error" class="error hidden">Wrong PIN</p>
+      <button id="pin-back" class="link-btn">Back</button>
+    </div>
+  `;
+  const input = document.getElementById("pin-input");
+  const error = document.getElementById("pin-error");
+
+  async function submit() {
+    const pin = input.value.trim();
+    if (!pin) return;
+    const ok = await login("counter", pin, counterId);
+    if (ok) {
+      afterLogin();
+    } else {
+      error.classList.remove("hidden");
+      input.value = "";
+    }
+  }
+
+  document.getElementById("pin-submit").addEventListener("click", submit);
+  document.getElementById("pin-back").addEventListener("click", initCounterFlow);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+  input.focus();
+}
+
+async function afterLogin() {
+  const whoRes = await apiGetAuthed("/api/counter/whoami", "counter");
+  if (!whoRes.ok) return;
+  const { counter: counterId } = await whoRes.json();
+  const state = await (await apiGet("/api/state")).json();
+  renderCounter(counterId, state);
+}
+
+function renderCounter(counterId, state) {
+  const app = document.getElementById("app");
   app.innerHTML = `
     <div class="page counter-page">
       <span class="eyebrow">Now Serving</span>
@@ -66,12 +83,13 @@ function renderCounter(counterId, counterCount, state) {
         <button id="done-btn" disabled>Done</button>
       </div>
       <p id="counter-message"></p>
-      ${switchLink}
+      <button id="switch-counter-btn" class="link-btn">Switch counter</button>
     </div>
   `;
-  if (counterCount > 1) {
-    document.getElementById("switch-counter-btn").addEventListener("click", switchCounter);
-  }
+  document.getElementById("switch-counter-btn").addEventListener("click", () => {
+    clearToken("counter");
+    initCounterFlow();
+  });
   const currentNumber = document.getElementById("current-number");
   const callBtn = document.getElementById("call-next-btn");
   const recallBtn = document.getElementById("recall-btn");
@@ -97,7 +115,7 @@ function renderCounter(counterId, counterCount, state) {
   }
 
   callBtn.addEventListener("click", async () => {
-    const res = await apiPost("/api/counter/call-next", "counter", { counter: counterId });
+    const res = await apiPost("/api/counter/call-next", "counter");
     if (res.status === 409) {
       const body = await res.json().catch(() => null);
       message.textContent =
@@ -111,9 +129,7 @@ function renderCounter(counterId, counterCount, state) {
   });
 
   recallBtn.addEventListener("click", async () => {
-    const res = await apiPost("/api/counter/recall-previous", "counter", {
-      counter: counterId,
-    });
+    const res = await apiPost("/api/counter/recall-previous", "counter");
     if (res.status === 404) {
       message.textContent = "Nothing to recall";
       return;
@@ -123,7 +139,7 @@ function renderCounter(counterId, counterCount, state) {
   });
 
   doneBtn.addEventListener("click", async () => {
-    const res = await apiPost("/api/counter/done", "counter", { counter: counterId });
+    const res = await apiPost("/api/counter/done", "counter");
     if (!res.ok) return;
     showIdle();
   });

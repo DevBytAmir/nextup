@@ -25,7 +25,7 @@ def test_counter_page_has_call_next_button(client):
     script = client.get("/frontend/counter/counter.js")
     assert script.status_code == 200
     assert 'id="call-next-btn"' in script.text
-    assert "data-counter" in script.text
+    assert "/api/counter/whoami" in script.text
 
 
 def test_admin_page_has_ticket_table(client):

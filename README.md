@@ -47,14 +47,14 @@ spoken announcement, and an admin screen gives full manual control.
 
 ## Architecture
 
-- **Backend** — FastAPI and Uvicorn, single process, a single `asyncio.Lock`
+- **Backend**: FastAPI and Uvicorn, single process, a single `asyncio.Lock`
   around every ticket mutation so two "Call Next" clicks can never claim the
   same ticket.
-- **Realtime** — one `/ws` WebSocket endpoint; every mutation broadcasts the
+- **Realtime**: one `/ws` WebSocket endpoint; every mutation broadcasts the
   updated queue to all connected pages.
-- **Persistence** — a single `data/state.json` file, loaded at startup and
+- **Persistence**: a single `data/state.json` file, loaded at startup and
   rewritten atomically after every mutation.
-- **Frontend** — plain HTML, CSS, and vanilla JavaScript. No build step, no
+- **Frontend**: plain HTML, CSS, and vanilla JavaScript. No build step, no
   framework.
 
 ## Getting started
@@ -69,7 +69,7 @@ python -m venv .venv
 
 Then open `http://127.0.0.1:8000/number`, `/counter`, `/admin`, and `/tv`.
 
-Default PINs — numbering `1111`, counters `2222` / `3333`, admin `9999`.
+Default PINs: numbering `1111`, counters `2222` / `3333`, admin `9999`.
 Change them from the admin settings panel, or by editing `data/state.json`
 directly before first run.
 

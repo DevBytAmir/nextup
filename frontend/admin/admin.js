@@ -76,7 +76,7 @@ async function issueBulk() {
     return;
   }
   const { tickets } = await res.json();
-  message.textContent = `Issued #${tickets[0].number}–#${tickets[tickets.length - 1].number}`;
+  message.textContent = `Issued #${tickets[0].number} to #${tickets[tickets.length - 1].number}`;
 }
 
 async function saveSoundMode() {
